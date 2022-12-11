@@ -6,6 +6,8 @@ larry-rgb: A larry plugin to change your computer's RGBs
     :alt: larry-rgb demo
     :target: https://www.youtube.com/watch?v=PmF4ihCTQks
 
+Tap on the above image for a video demonstration.
+
 larry-rgb is a plugin for larry that pics colors from your (background) image
 and smoothly transitions your LEDs from color to color.
 
