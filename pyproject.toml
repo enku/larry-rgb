@@ -1,0 +1,42 @@
+[project]
+name = "larry-rgb"
+dynamic = ["version"]
+description = "Larry plugin for openrgb"
+authors = [
+    {name = "Albert Hopkins", email = "marduk@letterboxes.org"},
+]
+
+dependencies = [
+    "openrgb-python>=0.2.15",
+    "larry @ git+https://github.com/enku/larry.git",
+    "colorthief>=0.2.1",
+]
+requires-python = ">=3.10"
+readme = "README.rst"
+license = {text = "MIT"}
+
+[project.entry-points."larry.plugins"]
+larry_rgb = "larry_rgb:plugin"
+
+
+[project.optional-dependencies]
+[tool.pdm]
+[tool.pdm.dev-dependencies]
+dev = [
+    "black>=22.10.0",
+    "isort>=5.10.1",
+    "mypy>=0.982",
+    "pylint>=2.15.5",
+    "coverage>=6.5.0",
+]
+
+[tool.pdm.scripts]
+tests = "python -m coverage run -m unittest discover --failfast --verbose tests"
+lint = "pylint larry_rgb.py tests/tests.py"
+
+[build-system]
+requires = ["pdm-pep517>=1.0.0"]
+build-backend = "pdm.pep517.api"
+
+[tool.coverage.run]
+source = ["larry_rgb"]
