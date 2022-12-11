@@ -37,6 +37,8 @@ class RGB:
     @property
     def devices(self) -> list[Device]:
         """Return the list of direct-mode compatible RGB devices"""
+        assert hasattr(self, "openrgb")
+
         return self.openrgb.ee_devices
 
 
