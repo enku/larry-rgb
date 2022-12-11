@@ -109,9 +109,6 @@ class Effect:
             self.colors = cycle(get_colors(input_fn, color_count, quality))
             self.config = config
 
-        if not self.thread.is_alive():
-            self.thread.start()
-
     def initial_config(self) -> ConfigType:
         """Return a dummy config.
 
@@ -126,7 +123,6 @@ class Effect:
 def get_colors(input_fn: str, color_count: int, quality: int) -> ColorList:
     """Return the dominant color of the given image"""
     color_thief = ColorThief(input_fn)
-
     palette = color_thief.get_palette(color_count, quality)
 
     return [Color(*rgb) for rgb in palette]
@@ -142,3 +138,6 @@ def plugin(_colors: ColorList, config: ConfigType) -> None:
     """RGB plugin handler"""
     effect = get_effect()
     effect.reset(config)
+
+    if not effect.thread.is_alive():
+        effect.thread.start()

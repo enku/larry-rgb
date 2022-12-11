@@ -2,6 +2,8 @@
 from configparser import ConfigParser
 from itertools import cycle
 from pathlib import Path
+from threading import Thread
+from typing import Any
 from unittest import TestCase
 from unittest.mock import Mock, call, patch
 
@@ -16,6 +18,39 @@ TEST_DIR = Path(__file__).resolve().parent
 IMAGE = TEST_DIR / "input.jpeg"
 
 
+class MockThread(Thread):
+    def __init__(  # pylint: disable=too-many-arguments,super-init-not-called
+        self, group=None, target=None, name=None, args=(), kwargs=None, *, daemon=None
+    ):
+        self.target = target
+        self.args = args
+        self.kwargs = kwargs or {}
+        self.group = group
+        self._running = False
+
+    def start(self) -> None:
+        if self.target is not None:
+            target = self.target
+        else:
+            target = self.run
+
+        self._running = True
+        target(*self.args, **self.kwargs)
+        self._running = False
+
+    def run(self) -> Any:
+        return
+
+    def is_alive(self) -> bool:
+        return self._running
+
+
+class MockEffect(larry_rgb.Effect):
+    def __init__(self) -> None:
+        super().__init__()
+        self.thread = MockThread()
+
+
 class PluginTestCase(TestCase):
     """Tests for the plugin method"""
 
@@ -23,13 +58,12 @@ class PluginTestCase(TestCase):
         larry_rgb.get_effect.cache_clear()
 
     def test_instantiates_and_sets_effect(self):
-        with patch.object(larry_rgb, "Effect", autospec=True) as mock_effect_cls:
-            config = Mock()
+        with patch.object(larry_rgb, "get_effect") as mock_get_effect:
+            mock_effect = mock_get_effect.return_value = MockEffect()
+            config = make_config(input=IMAGE)
             larry_rgb.plugin([], config)
 
-        mock_effect_cls.assert_called_once_with()
-        effect = mock_effect_cls.return_value
-        effect.reset.assert_called_once_with(config)
+        self.assertEqual(mock_effect.config, config)
 
     def test_get_effect_when_effect_not_exists(self):
         with patch.object(larry_rgb, "Effect", autospec=True) as mock_effect_cls:
@@ -54,9 +88,6 @@ class EffectTestCase(TestCase):
 
     def setUp(self):
         self.effect = larry_rgb.Effect()
-
-    def tearDown(self):
-        self.effect.die = True
 
     def test_set_next_gradient_with_none(self, mock_sleep, mock_rgbclient):
         rgb_client = mock_rgbclient.return_value
@@ -115,7 +146,7 @@ class EffectTestCase(TestCase):
         self.assertEqual(stop_color, Color("red"))
 
     def test_reset(self, *_):
-        config = self.make_config(input=IMAGE, max_palette_size=3, quality=15)
+        config = make_config(input=IMAGE, max_palette_size=3, quality=15)
 
         with patch.object(larry_rgb, "cycle") as mock_cycle:
             self.effect.reset(config)
@@ -126,17 +157,16 @@ class EffectTestCase(TestCase):
         mock_cycle.assert_called_once_with(image_colors)
         self.assertEqual(self.effect.colors, mock_cycle.return_value)
 
-        self.assertTrue(self.effect.thread.is_alive())
 
-    def make_config(self, **kwargs) -> ConfigType:
-        parser = ConfigParser()
-        parser.add_section("rgb")
-        config = ConfigType(parser, "rgb")
+def make_config(**kwargs) -> ConfigType:
+    parser = ConfigParser()
+    parser.add_section("rgb")
+    config = ConfigType(parser, "rgb")
 
-        for name, value in kwargs.items():
-            config[name] = str(value)
+    for name, value in kwargs.items():
+        config[name] = str(value)
 
-        return config
+    return config
 
 
 @patch.object(larry_rgb, "OpenRGBClient", spec=OpenRGBClient)
