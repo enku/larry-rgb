@@ -51,7 +51,10 @@ Install ``larry-rgb``::
     # best/slowest.  Higher numbers are faster but less accurate
     quality = 10
 
-    # Time (in seconds) between color changes
+    # Time (in seconds) between color changes when fading
     interval = 0.05
+
+    # Time (in seconds) to pause after fading from one color to the next
+    pause_after_fade = 0.0
 
 3. (Re)start larry and enjoy!
