@@ -17,6 +17,10 @@ import larry_rgb
 TEST_DIR = Path(__file__).resolve().parent
 IMAGE = TEST_DIR / "input.jpeg"
 
+RED = Color("red")
+GREEN = Color("green")
+BLUE = Color("blue")
+
 
 class MockThread(Thread):
     def __init__(  # pylint: disable=too-many-arguments,super-init-not-called
@@ -93,14 +97,14 @@ class EffectTestCase(TestCase):
         rgb_client = mock_rgbclient.return_value
         rgb_client.ee_devices = [Mock(), Mock(), Mock()]
 
-        self.effect.colors = cycle([Color("red"), Color("green"), Color("blue")])
+        self.effect.colors = cycle([RED, GREEN, BLUE])
         self.effect.config["gradient_steps"] = "5"
         self.effect.config["interval"] = "6"
         color = self.effect.set_next_gradient(None)
 
-        self.assertEqual(color, Color("green"))
+        self.assertEqual(color, GREEN)
 
-        gradient = Color.gradient(Color("red"), Color("green"), 5)
+        gradient = Color.gradient(RED, GREEN, 5)
         calls = [
             call(RGBColor(color.red, color.green, color.blue)) for color in gradient
         ]
@@ -115,12 +119,12 @@ class EffectTestCase(TestCase):
         rgb_client = mock_rgbclient.return_value
         rgb_client.ee_devices = [Mock(), Mock(), Mock()]
 
-        self.effect.colors = cycle([Color("red"), Color("green"), Color("blue")])
+        self.effect.colors = cycle([RED, GREEN, BLUE])
         self.effect.config["gradient_steps"] = "5"
         self.effect.config["interval"] = "6"
         color = self.effect.set_next_gradient(prev_stop_color)
 
-        gradient = Color.gradient(prev_stop_color, Color("red"), 5)
+        gradient = Color.gradient(prev_stop_color, RED, 5)
         calls = [
             call(RGBColor(color.red, color.green, color.blue)) for color in gradient
         ]
@@ -131,19 +135,19 @@ class EffectTestCase(TestCase):
         mock_sleep.assert_called_with(6.0)
 
     def test_get_gradient_colors_with_none(self, *_):
-        self.effect.colors = cycle([Color("red"), Color("green"), Color("blue")])
+        self.effect.colors = cycle([RED, GREEN, BLUE])
         start_color, stop_color = self.effect.get_gradient_colors(None)
 
-        self.assertEqual(start_color, Color("red"))
-        self.assertEqual(stop_color, Color("green"))
+        self.assertEqual(start_color, RED)
+        self.assertEqual(stop_color, GREEN)
 
     def test_get_gradient_colors_with_prev_stop_color(self, *_):
         prev_stop_color = Color(45, 23, 212)
-        self.effect.colors = cycle([Color("red"), Color("green"), Color("blue")])
+        self.effect.colors = cycle([RED, GREEN, BLUE])
         start_color, stop_color = self.effect.get_gradient_colors(prev_stop_color)
 
         self.assertEqual(start_color, Color(prev_stop_color))
-        self.assertEqual(stop_color, Color("red"))
+        self.assertEqual(stop_color, RED)
 
     def test_reset(self, *_):
         config = make_config(input=IMAGE, max_palette_size=3, quality=15)
