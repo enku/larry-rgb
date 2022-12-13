@@ -97,9 +97,11 @@ class EffectTestCase(TestCase):
         rgb_client = mock_rgbclient.return_value
         rgb_client.ee_devices = [Mock(), Mock(), Mock()]
 
-        self.effect.colors = cycle([RED, GREEN, BLUE])
+        self.effect.image_colors = [RED, GREEN, BLUE]
+        self.effect.colors = cycle(self.effect.image_colors)
         self.effect.config["gradient_steps"] = "5"
         self.effect.config["interval"] = "6"
+        self.effect.config["pause_after_fade"] = "20"
         color = self.effect.set_next_gradient(None)
 
         self.assertEqual(color, GREEN)
@@ -111,8 +113,20 @@ class EffectTestCase(TestCase):
         for device in rgb_client.ee_devices:
             self.assertEqual(device.set_color.call_args_list, calls)
 
-        self.assertEqual(mock_sleep.call_count, 5)
-        mock_sleep.assert_called_with(6.0)
+        calls = [call(10.0), call(6.0), call(6.0), call(6.0), call(10.0)]
+        self.assertEqual(mock_sleep.call_args_list, calls)
+
+        mock_sleep.reset_mock()
+        color = self.effect.set_next_gradient(color)
+
+        self.assertEqual(color, BLUE)
+        self.assertEqual(mock_sleep.call_args_list, calls)
+
+        mock_sleep.reset_mock()
+        color = self.effect.set_next_gradient(color)
+
+        self.assertEqual(color, RED)
+        self.assertEqual(mock_sleep.call_args_list, calls)
 
     def test_set_next_gradient_with_prev_stop_color(self, mock_sleep, mock_rgbclient):
         prev_stop_color = Color(45, 23, 212)
