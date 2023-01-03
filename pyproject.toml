@@ -21,6 +21,8 @@ larry_rgb = "larry_rgb:plugin"
 
 [project.optional-dependencies]
 [tool.pdm]
+version = { source = "scm" }
+
 [tool.pdm.dev-dependencies]
 dev = [
     "black>=22.10.0",
