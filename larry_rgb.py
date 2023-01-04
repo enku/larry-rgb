@@ -2,14 +2,18 @@
 from __future__ import annotations
 
 import os.path
+import tempfile
 import time
 from configparser import ConfigParser
 from dataclasses import dataclass
 from functools import cache, cached_property
 from itertools import cycle
 from threading import Lock, Thread
-from typing import Iterator
+from typing import IO, Iterator
+from xml.etree import ElementTree
 
+import cairosvg
+import PIL
 from colorthief import ColorThief
 from larry import Color, ColorList, ConfigType
 from openrgb import OpenRGBClient
@@ -129,12 +133,35 @@ class Effect:
         return ConfigType(parser, "rgb")
 
 
-def get_colors(input_fn: str, color_count: int, quality: int) -> ColorList:
+def get_colors(
+    input_fn: str, color_count: int, quality: int, from_svg: bool = False
+) -> ColorList:
     """Return the dominant color of the given image"""
-    color_thief = ColorThief(input_fn)
+    try:
+        color_thief = ColorThief(input_fn)
+    except PIL.UnidentifiedImageError as unidentified_image_error:
+        if from_svg:
+            raise
+
+        # Maybe it's an svg
+        with tempfile.NamedTemporaryFile("wb") as tmp:
+            try:
+                convert_svg_to_png(str(input_fn), tmp)
+            except ElementTree.ParseError:
+                # Not a (good) SVG either. Raise the original error
+                raise unidentified_image_error
+
+            tmp.flush()
+            return get_colors(tmp.name, color_count, quality, from_svg=True)
+
     palette = color_thief.get_palette(color_count, quality)
 
     return [Color(*rgb) for rgb in palette]
+
+
+def convert_svg_to_png(svg_fn: str, outfile: IO[bytes]) -> None:
+    """Convert the given svg filename to PNG and write to outfile object"""
+    cairosvg.svg2png(url=svg_fn, write_to=outfile)
 
 
 @cache

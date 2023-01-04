@@ -10,6 +10,7 @@ dependencies = [
     "openrgb-python>=0.2.15",
     "larry @ git+https://github.com/enku/larry.git",
     "colorthief>=0.2.1",
+    "cairosvg>=2.5.2",
 ]
 requires-python = ">=3.10"
 readme = "README.rst"

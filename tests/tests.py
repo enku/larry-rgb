@@ -1,4 +1,6 @@
 # pylint: disable=missing-docstring
+import importlib.metadata
+import tempfile
 from configparser import ConfigParser
 from itertools import cycle
 from pathlib import Path
@@ -7,6 +9,7 @@ from typing import Any
 from unittest import TestCase
 from unittest.mock import Mock, call, patch
 
+import PIL
 from larry import ConfigType
 from larry.color import Color
 from openrgb import OpenRGBClient
@@ -83,6 +86,27 @@ class PluginTestCase(TestCase):
 
         self.assertIs(effect, original_effect)
         mock_effect_cls.assert_not_called()
+
+    def test_against_svg_image(self):
+        larry_pkg = importlib.metadata.distribution("larry")
+        svg_file = larry_pkg.locate_file("larry/data/gentoo-cow-gdm-remake.svg")
+        image_colors = larry_rgb.get_colors(svg_file, 3, 15)
+
+        expected = {
+            Color(34, 65, 80),
+            Color(123, 139, 147),
+            Color(4, 4, 4),
+            Color(84, 100, 111),
+        }
+        self.assertEqual(set(image_colors), expected)
+
+    def test_against_bad_svg_image(self):
+        with tempfile.NamedTemporaryFile(suffix=".svg") as bad_svg:
+            bad_svg.write(b"not really an svg")
+            bad_svg.flush()
+
+            with self.assertRaises(PIL.UnidentifiedImageError):
+                larry_rgb.get_colors(bad_svg.name, 3, 15)
 
 
 @patch.object(larry_rgb, "OpenRGBClient")
