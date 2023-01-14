@@ -149,7 +149,7 @@ def get_colors(
                 convert_svg_to_png(str(input_fn), tmp)
             except ElementTree.ParseError:
                 # Not a (good) SVG either. Raise the original error
-                raise unidentified_image_error
+                raise PIL.UnidentifiedImageError from unidentified_image_error
 
             tmp.flush()
             return get_colors(tmp.name, color_count, quality, from_svg=True)
