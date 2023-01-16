@@ -43,3 +43,7 @@ build-backend = "pdm.pep517.api"
 
 [tool.coverage.run]
 source = ["larry_rgb"]
+
+[tool.pylint.design]
+# Maximum number of arguments for function / method.
+max-args = 10

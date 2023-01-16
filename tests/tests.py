@@ -109,95 +109,18 @@ class PluginTestCase(TestCase):
                 larry_rgb.get_colors(bad_svg.name, 3, 15)
 
 
-@patch.object(larry_rgb, "OpenRGBClient")
-@patch.object(larry_rgb.time, "sleep")
 class EffectTestCase(TestCase):
     """Tests for the Effect class"""
 
-    def setUp(self):
-        self.effect = larry_rgb.Effect()
-
-    def test_set_next_gradient_with_none(self, mock_sleep, mock_rgbclient):
-        rgb_client = mock_rgbclient.return_value
-        rgb_client.ee_devices = [Mock(), Mock(), Mock()]
-
-        self.effect.image_colors = [RED, GREEN, BLUE]
-        self.effect.colors = cycle(self.effect.image_colors)
-        self.effect.config["gradient_steps"] = "5"
-        self.effect.config["interval"] = "6"
-        self.effect.config["pause_after_fade"] = "20"
-        color = self.effect.set_next_gradient(None)
-
-        self.assertEqual(color, GREEN)
-
-        gradient = Color.gradient(RED, GREEN, 5)
-        calls = [
-            call(RGBColor(color.red, color.green, color.blue)) for color in gradient
-        ]
-        for device in rgb_client.ee_devices:
-            self.assertEqual(device.set_color.call_args_list, calls)
-
-        calls = [call(10.0), call(6.0), call(6.0), call(6.0), call(10.0)]
-        self.assertEqual(mock_sleep.call_args_list, calls)
-
-        mock_sleep.reset_mock()
-        color = self.effect.set_next_gradient(color)
-
-        self.assertEqual(color, BLUE)
-        self.assertEqual(mock_sleep.call_args_list, calls)
-
-        mock_sleep.reset_mock()
-        color = self.effect.set_next_gradient(color)
-
-        self.assertEqual(color, RED)
-        self.assertEqual(mock_sleep.call_args_list, calls)
-
-    def test_set_next_gradient_with_prev_stop_color(self, mock_sleep, mock_rgbclient):
-        prev_stop_color = Color(45, 23, 212)
-        rgb_client = mock_rgbclient.return_value
-        rgb_client.ee_devices = [Mock(), Mock(), Mock()]
-
-        self.effect.colors = cycle([RED, GREEN, BLUE])
-        self.effect.config["gradient_steps"] = "5"
-        self.effect.config["interval"] = "6"
-        color = self.effect.set_next_gradient(prev_stop_color)
-
-        gradient = Color.gradient(prev_stop_color, RED, 5)
-        calls = [
-            call(RGBColor(color.red, color.green, color.blue)) for color in gradient
-        ]
-        for device in rgb_client.ee_devices:
-            self.assertEqual(device.set_color.call_args_list, calls)
-
-        self.assertEqual(mock_sleep.call_count, 5)
-        mock_sleep.assert_called_with(6.0)
-
-    def test_get_gradient_colors_with_none(self, *_):
-        self.effect.colors = cycle([RED, GREEN, BLUE])
-        start_color, stop_color = self.effect.get_gradient_colors(None)
-
-        self.assertEqual(start_color, RED)
-        self.assertEqual(stop_color, GREEN)
-
-    def test_get_gradient_colors_with_prev_stop_color(self, *_):
-        prev_stop_color = Color(45, 23, 212)
-        self.effect.colors = cycle([RED, GREEN, BLUE])
-        start_color, stop_color = self.effect.get_gradient_colors(prev_stop_color)
-
-        self.assertEqual(start_color, Color(prev_stop_color))
-        self.assertEqual(stop_color, RED)
-
-    def test_reset(self, *_):
+    def test_reset(self):
+        effect = larry_rgb.Effect()
+        image_colors = larry_rgb.get_colors(IMAGE, 3, 15)
         config = make_config(input=IMAGE, max_palette_size=3, quality=15)
 
-        with patch.object(larry_rgb, "cycle") as mock_cycle:
-            self.effect.reset(config)
+        effect.reset(config)
 
-        self.assertIs(self.effect.config, config)
-
-        image_colors = larry_rgb.get_colors(IMAGE, 3, 15)
-        mock_cycle.assert_called_once_with(image_colors)
-        self.assertEqual(self.effect.colors, mock_cycle.return_value)
+        self.assertIs(effect.config, config)
+        self.assertEqual(effect.colors, image_colors)
 
 
 def make_config(**kwargs) -> ConfigType:
@@ -248,3 +171,97 @@ class RGBDataclassTestCase(TestCase):
 
         for device in mock_devices:
             device.set_color.assert_called_once_with(RGBColor(red=0, green=0, blue=255))
+
+
+class GetGradientColors(TestCase):
+    """Tests for the get_gradient_colors() method"""
+
+    def test_with_none(self):
+        colors = cycle([RED, GREEN, BLUE])
+        start_color, stop_color = larry_rgb.get_gradient_colors(colors, None)
+
+        self.assertEqual(start_color, RED)
+        self.assertEqual(stop_color, GREEN)
+
+    def test_with_prev_stop_color(self):
+        prev_stop_color = Color(45, 23, 212)
+        colors = cycle([RED, GREEN, BLUE])
+        start_color, stop_color = larry_rgb.get_gradient_colors(colors, prev_stop_color)
+
+        self.assertEqual(start_color, Color(prev_stop_color))
+        self.assertEqual(stop_color, RED)
+
+
+class SetGradient(TestCase):
+    """Tests for the set_gradient() method"""
+
+    def test_with_none(self):
+        mock_rgb = Mock(spec=larry_rgb.RGB)()
+        mock_rgb.devices = [Mock(), Mock(), Mock()]
+        mock_sleep = Mock()
+
+        colors = cycle([RED, GREEN, BLUE])
+        steps = 5
+        interval = 6.0
+        pause_after_fade = 20.0
+        color = larry_rgb.set_gradient(
+            mock_rgb, colors, steps, pause_after_fade, interval, None, mock_sleep
+        )
+
+        self.assertEqual(color, GREEN)
+
+        gradient = Color.gradient(RED, GREEN, 5)
+        calls = [
+            call(RGBColor(color.red, color.green, color.blue)) for color in gradient
+        ]
+        for device in mock_rgb.devices:
+            self.assertEqual(device.set_color.call_args_list, calls)
+
+        calls = [call(10.0), call(6.0), call(6.0), call(6.0), call(10.0)]
+        self.assertEqual(mock_sleep.call_args_list, calls)
+
+        mock_sleep.reset_mock()
+        color = larry_rgb.set_gradient(
+            mock_rgb, colors, steps, pause_after_fade, interval, color, mock_sleep
+        )
+
+        self.assertEqual(color, BLUE)
+        self.assertEqual(mock_sleep.call_args_list, calls)
+
+        mock_sleep.reset_mock()
+        color = larry_rgb.set_gradient(
+            mock_rgb, colors, steps, pause_after_fade, interval, color, mock_sleep
+        )
+
+        self.assertEqual(color, RED)
+        self.assertEqual(mock_sleep.call_args_list, calls)
+
+    def test_with_prev_stop_color(self):
+        prev_stop_color = Color(45, 23, 212)
+        mock_rgb = Mock(spec=larry_rgb.RGB)()
+        mock_rgb.devices = [Mock(), Mock(), Mock()]
+        mock_sleep = Mock()
+
+        colors = cycle([RED, GREEN, BLUE])
+        steps = 5
+        interval = 6.0
+        pause_after_fade = 20.0
+        color = larry_rgb.set_gradient(
+            mock_rgb,
+            colors,
+            steps,
+            pause_after_fade,
+            interval,
+            prev_stop_color,
+            mock_sleep,
+        )
+
+        gradient = Color.gradient(prev_stop_color, RED, 5)
+        calls = [
+            call(RGBColor(color.red, color.green, color.blue)) for color in gradient
+        ]
+        for device in mock_rgb.devices:
+            self.assertEqual(device.set_color.call_args_list, calls)
+
+        self.assertEqual(mock_sleep.call_count, 5)
+        mock_sleep.assert_called_with(10.0)

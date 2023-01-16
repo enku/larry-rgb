@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from functools import cache, cached_property
 from itertools import cycle
 from threading import Lock, Thread
-from typing import IO, Iterator
+from typing import IO, Callable
 from xml.etree import ElementTree
 
 import cairosvg
@@ -52,8 +52,7 @@ class Effect:
     def __init__(self) -> None:
         self.config = self.initial_config()
         self.lock = Lock()
-        self.image_colors: ColorList = []
-        self.colors: Iterator[Color] = cycle([Color(0, 0, 0)])
+        self.colors: ColorList = []
         self.thread = Thread(target=self.run)
         self.die = False
 
@@ -76,40 +75,17 @@ class Effect:
         stop_color = None
 
         while not self.die:
-            stop_color = self.set_next_gradient(stop_color)
+            with self.lock:
+                colors = cycle([*self.colors])
+                steps = self.config.getint("gradient_steps", fallback=20)
+                pause_after_fade = self.config.getfloat(
+                    "pause_after_fade", fallback=0.0
+                )
+                interval = self.config.getfloat("interval", fallback=0.05)
 
-    def set_next_gradient(self, prev_stop_color: Color | None) -> Color:
-        """Set the next gradient in the cycle
-
-        If prev_stop_color is None, the start color is the next color in the colors
-        cycle, otherwise it's the prev_stop_color. The stop color is the next color in
-        the colors cycle.
-        """
-        start_color, stop_color = self.get_gradient_colors(prev_stop_color)
-        steps = self.config.getint("gradient_steps", fallback=20)
-
-        for color in Color.gradient(start_color, stop_color, steps):
-            is_image_color = color in self.image_colors
-            pause_after_fade = self.config.getfloat("pause_after_fade", fallback=0.0)
-            rgb_color = RGBColor(color.red, color.green, color.blue)
-
-            for device in self.rgb.devices:
-                device.set_color(rgb_color)
-            if is_image_color and pause_after_fade:
-                time.sleep(pause_after_fade / 2)
-
-            if not (is_image_color and pause_after_fade):
-                time.sleep(self.config.getfloat("interval", fallback=0.05))
-
-        return stop_color
-
-    def get_gradient_colors(self, prev_stop_color: Color | None) -> tuple[Color, Color]:
-        """Return the start_color and stop_color for the next gradient cycle"""
-        with self.lock:
-            start_color = prev_stop_color if prev_stop_color else next(self.colors)
-            stop_color = next(self.colors)
-
-        return start_color, stop_color
+            stop_color = set_gradient(
+                self.rgb, colors, steps, pause_after_fade, interval, stop_color
+            )
 
     def reset(self, config: ConfigType) -> None:
         """Reset the thread's color list"""
@@ -118,8 +94,7 @@ class Effect:
         quality = config.getint("quality", fallback=10)
 
         with self.lock:
-            self.image_colors = get_colors(input_fn, color_count, quality)
-            self.colors = cycle(self.image_colors)
+            self.colors = get_colors(input_fn, color_count, quality)
             self.config = config
 
     def initial_config(self) -> ConfigType:
@@ -131,6 +106,48 @@ class Effect:
         parser.add_section("rgb")
 
         return ConfigType(parser, "rgb")
+
+
+def set_gradient(
+    rgb: RGB,
+    colors: cycle[Color],
+    steps: int,
+    pause_after_fade: float,
+    interval: float,
+    prev_stop_color: Color | None,
+    sleep: Callable[[float], None] = time.sleep,
+) -> Color:
+    """Set the next gradient in the cycle
+
+    If prev_stop_color is None, the start color is the next color in the colors
+    cycle, otherwise it's the prev_stop_color. The stop color is the next color in
+    the colors cycle.
+    """
+    color_set: set[Color] = set()
+    start_color, stop_color = get_gradient_colors(colors, prev_stop_color)
+    color_set.add(start_color)
+    color_set.add(stop_color)
+
+    for color in Color.gradient(start_color, stop_color, steps):
+        is_image_color = color in color_set
+        rgb_color = RGBColor(color.red, color.green, color.blue)
+
+        for device in rgb.devices:
+            device.set_color(rgb_color)
+        if is_image_color and pause_after_fade:
+            sleep(pause_after_fade / 2)
+
+        if not (is_image_color and pause_after_fade):
+            sleep(interval)
+
+    return stop_color
+
+
+def get_gradient_colors(
+    colors: cycle[Color], prev_stop_color: Color | None
+) -> tuple[Color, Color]:
+    """Return the start_color and stop_color for the next gradient cycle"""
+    return prev_stop_color if prev_stop_color else next(colors), next(colors)
 
 
 def get_colors(
