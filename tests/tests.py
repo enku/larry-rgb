@@ -122,6 +122,16 @@ class EffectTestCase(TestCase):
         self.assertIs(effect.config, config)
         self.assertEqual(effect.colors, image_colors)
 
+    def test_rgb(self):
+        effect = larry_rgb.Effect()
+        effect.config["address"] = "foo.invalid:666"
+
+        with patch.object(larry_rgb, "RGB", autospec=True) as mock_rgb:
+            rgb = effect.rgb
+
+        self.assertIsInstance(rgb, larry_rgb.RGB)
+        mock_rgb.assert_called_once_with(address="foo.invalid", port=666)
+
 
 def make_config(**kwargs) -> ConfigType:
     parser = ConfigParser()
