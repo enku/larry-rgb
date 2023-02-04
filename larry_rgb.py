@@ -33,6 +33,12 @@ class RGB:
         for device in self.openrgb.ee_devices:
             device.set_mode("Direct")
 
+            # Not resizing the zones on OpenRGB 0.8 results in not all rgbs getting set
+            # on my system.  See https://github.com/jath03/openrgb-python/discussions/64
+            led_count = len(device.leds)
+            for zone in device.zones:
+                zone.resize(led_count)
+
     def set_color(self, color: Color) -> None:
         """Send the given color to openrgb"""
         for device in self.openrgb.ee_devices:
