@@ -52,7 +52,7 @@ class Effect:
     def __init__(self) -> None:
         self.config = self.initial_config()
         self.lock = Lock()
-        self.colors: ColorList = []
+        self.colors: cycle[Color] = cycle([])
         self.thread = Thread(target=self.run)
         self.die = False
 
@@ -76,7 +76,6 @@ class Effect:
 
         while not self.die:
             with self.lock:
-                colors = cycle([*self.colors])
                 steps = self.config.getint("gradient_steps", fallback=20)
                 pause_after_fade = self.config.getfloat(
                     "pause_after_fade", fallback=0.0
@@ -84,7 +83,7 @@ class Effect:
                 interval = self.config.getfloat("interval", fallback=0.05)
 
             stop_color = set_gradient(
-                self.rgb, colors, steps, pause_after_fade, interval, stop_color
+                self.rgb, self.colors, steps, pause_after_fade, interval, stop_color
             )
 
     def reset(self, config: ConfigType) -> None:
@@ -94,7 +93,7 @@ class Effect:
         quality = config.getint("quality", fallback=10)
 
         with self.lock:
-            self.colors = get_colors(input_fn, color_count, quality)
+            self.colors = cycle(get_colors(input_fn, color_count, quality))
             self.config = config
 
     def initial_config(self) -> ConfigType:

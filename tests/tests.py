@@ -117,10 +117,11 @@ class EffectTestCase(TestCase):
         image_colors = larry_rgb.get_colors(IMAGE, 3, 15)
         config = make_config(input=IMAGE, max_palette_size=3, quality=15)
 
-        effect.reset(config)
+        with patch.object(larry_rgb, "cycle") as mock_cycle:
+            effect.reset(config)
 
         self.assertIs(effect.config, config)
-        self.assertEqual(effect.colors, image_colors)
+        self.assertEqual(effect.colors, mock_cycle(image_colors))
 
     def test_rgb(self):
         effect = larry_rgb.Effect()
