@@ -108,7 +108,7 @@ class PluginTestCase(TestCase):
     def test_against_svg_image(self):
         larry_pkg = importlib.metadata.distribution("larry")
         svg_file = larry_pkg.locate_file("larry/data/gentoo-cow-gdm-remake.svg")
-        image_colors = larry_rgb.get_colors(svg_file, 3, 15)
+        image_colors = larry_rgb.get_colors(str(svg_file), 3, 15)
 
         expected = {
             Color(34, 65, 80),

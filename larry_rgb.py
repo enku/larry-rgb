@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from functools import cache, cached_property
 from itertools import cycle
 from threading import Lock, Thread
-from typing import IO, Callable
+from typing import Callable
 from xml.etree import ElementTree
 
 import cairosvg
@@ -165,25 +165,23 @@ def get_colors(
         if from_svg:
             raise
 
-        # Maybe it's an svg
-        with tempfile.NamedTemporaryFile("wb") as tmp:
-            try:
-                convert_svg_to_png(str(input_fn), tmp)
-            except ElementTree.ParseError:
-                # Not a (good) SVG either. Raise the original error
-                raise PIL.UnidentifiedImageError from unidentified_image_error
-
-            tmp.flush()
-            return get_colors(tmp.name, color_count, quality, from_svg=True)
+        # Maybe it's an SVG
+        try:
+            with tempfile.NamedTemporaryFile("wb", buffering=0) as tmp:
+                tmp.write(convert_svg_to_png(input_fn))
+                return get_colors(tmp.name, color_count, quality, from_svg=True)
+        except ElementTree.ParseError:
+            # Not a (good) SVG either. Raise the original error
+            raise PIL.UnidentifiedImageError from unidentified_image_error
 
     palette = color_thief.get_palette(color_count, quality)
 
     return [Color(*rgb) for rgb in palette]
 
 
-def convert_svg_to_png(svg_fn: str, outfile: IO[bytes]) -> None:
-    """Convert the given svg filename to PNG and write to outfile object"""
-    cairosvg.svg2png(url=svg_fn, write_to=outfile)
+def convert_svg_to_png(svg_fn: str) -> bytes:
+    """Convert the given svg filename to PNG and return the PNG bytes"""
+    return cairosvg.svg2png(url=svg_fn)
 
 
 @cache
