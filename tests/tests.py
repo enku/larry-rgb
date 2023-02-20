@@ -4,10 +4,8 @@ import tempfile
 from configparser import ConfigParser
 from itertools import cycle
 from pathlib import Path
-from threading import Thread
-from typing import Any
-from unittest import TestCase
-from unittest.mock import Mock, call, patch
+from unittest import IsolatedAsyncioTestCase, TestCase
+from unittest.mock import AsyncMock, Mock, call, patch
 
 import PIL
 from larry import ConfigType
@@ -43,52 +41,21 @@ def create_mock_openrgb(devices: int, leds=1, zones=1) -> OpenRGBClient:
     return Mock(spec=OpenRGBClient, ee_devices=mock_devices)
 
 
-class MockThread(Thread):
-    def __init__(  # pylint: disable=too-many-arguments,super-init-not-called
-        self, group=None, target=None, name=None, args=(), kwargs=None, *, daemon=None
-    ):
-        self.target = target
-        self.args = args
-        self.kwargs = kwargs or {}
-        self.group = group
-        self._running = False
-
-    def start(self) -> None:
-        if self.target is not None:
-            target = self.target
-        else:
-            target = self.run
-
-        self._running = True
-        target(*self.args, **self.kwargs)
-        self._running = False
-
-    def run(self) -> Any:
-        return
-
-    def is_alive(self) -> bool:
-        return self._running
-
-
-class MockEffect(larry_rgb.Effect):
-    def __init__(self) -> None:
-        super().__init__()
-        self.thread = MockThread()
-
-
-class PluginTestCase(TestCase):
+class PluginTestCase(IsolatedAsyncioTestCase):
     """Tests for the plugin method"""
 
     def setUp(self):
         larry_rgb.get_effect.cache_clear()
 
-    def test_instantiates_and_sets_effect(self):
-        with patch.object(larry_rgb, "get_effect") as mock_get_effect:
-            mock_effect = mock_get_effect.return_value = MockEffect()
-            config = make_config(input=IMAGE)
-            larry_rgb.plugin([], config)
+    async def test_instantiates_and_sets_effect(self):
+        config = make_config(input=IMAGE)
 
-        self.assertEqual(mock_effect.config, config)
+        with patch.object(larry_rgb.Effect, "run") as mock_run:
+            await larry_rgb.plugin([], config)
+
+        effect = larry_rgb.get_effect()
+        self.assertIs(effect.config, config)
+        mock_run.assert_called_once_with()
 
     def test_get_effect_when_effect_not_exists(self):
         with patch.object(larry_rgb, "Effect", autospec=True) as mock_effect_cls:
@@ -127,16 +94,16 @@ class PluginTestCase(TestCase):
                 larry_rgb.get_colors(bad_svg.name, 3, 15)
 
 
-class EffectTestCase(TestCase):
+class EffectTestCase(IsolatedAsyncioTestCase):
     """Tests for the Effect class"""
 
-    def test_reset(self):
+    async def test_reset(self):
         effect = larry_rgb.Effect()
         image_colors = larry_rgb.get_colors(IMAGE, 3, 15)
         config = make_config(input=IMAGE, max_palette_size=3, quality=15)
 
         with patch.object(larry_rgb, "cycle") as mock_cycle:
-            effect.reset(config)
+            await effect.reset(config)
 
         self.assertIs(effect.config, config)
         self.assertEqual(effect.colors, mock_cycle(image_colors))
@@ -234,19 +201,19 @@ class GetGradientColors(TestCase):
         self.assertEqual(stop_color, RED)
 
 
-class SetGradient(TestCase):
+class SetGradient(IsolatedAsyncioTestCase):
     """Tests for the set_gradient() method"""
 
-    def test_with_none(self):
+    async def test_with_none(self):
         mock_rgb = Mock(spec=larry_rgb.RGB)()
         mock_rgb.devices = [Mock(), Mock(), Mock()]
-        mock_sleep = Mock()
+        mock_sleep = AsyncMock()
 
         colors = cycle([RED, GREEN, BLUE])
         steps = 5
         interval = 6.0
         pause_after_fade = 20.0
-        color = larry_rgb.set_gradient(
+        color = await larry_rgb.set_gradient(
             mock_rgb, colors, steps, pause_after_fade, interval, None, mock_sleep
         )
 
@@ -263,7 +230,7 @@ class SetGradient(TestCase):
         self.assertEqual(mock_sleep.call_args_list, calls)
 
         mock_sleep.reset_mock()
-        color = larry_rgb.set_gradient(
+        color = await larry_rgb.set_gradient(
             mock_rgb, colors, steps, pause_after_fade, interval, color, mock_sleep
         )
 
@@ -271,24 +238,24 @@ class SetGradient(TestCase):
         self.assertEqual(mock_sleep.call_args_list, calls)
 
         mock_sleep.reset_mock()
-        color = larry_rgb.set_gradient(
+        color = await larry_rgb.set_gradient(
             mock_rgb, colors, steps, pause_after_fade, interval, color, mock_sleep
         )
 
         self.assertEqual(color, RED)
         self.assertEqual(mock_sleep.call_args_list, calls)
 
-    def test_with_prev_stop_color(self):
+    async def test_with_prev_stop_color(self):
         prev_stop_color = Color(45, 23, 212)
         mock_rgb = Mock(spec=larry_rgb.RGB)()
         mock_rgb.devices = [Mock(), Mock(), Mock()]
-        mock_sleep = Mock()
+        mock_sleep = AsyncMock()
 
         colors = cycle([RED, GREEN, BLUE])
         steps = 5
         interval = 6.0
         pause_after_fade = 20.0
-        color = larry_rgb.set_gradient(
+        color = await larry_rgb.set_gradient(
             mock_rgb,
             colors,
             steps,

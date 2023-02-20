@@ -1,15 +1,14 @@
 """Set the OpenRGB rbg colors to the dominant color of the image"""
 from __future__ import annotations
 
+import asyncio
 import os.path
 import tempfile
-import time
 from configparser import ConfigParser
 from dataclasses import dataclass
 from functools import cache, cached_property
 from itertools import cycle
-from threading import Lock, Thread
-from typing import Callable
+from typing import Callable, Awaitable
 from xml.etree import ElementTree
 
 import cairosvg
@@ -57,10 +56,14 @@ class Effect:
 
     def __init__(self) -> None:
         self.config = self.initial_config()
-        self.lock = Lock()
+        self.lock = asyncio.Lock()
         self.colors: cycle[Color] = cycle([])
-        self.thread = Thread(target=self.run)
         self.die = False
+        self.running = False
+
+    def is_alive(self) -> bool:
+        """Return True if effect is running"""
+        return self.running
 
     @cached_property
     def rgb(self) -> RGB:
@@ -76,29 +79,31 @@ class Effect:
 
         return RGB(address=address, port=port)
 
-    def run(self) -> None:  # pragma: no cover
+    async def run(self) -> None:  # pragma: no cover
         """Effect thread target"""
         stop_color = None
 
         while not self.die:
-            with self.lock:
+            self.running = True
+            async with self.lock:
                 steps = self.config.getint("gradient_steps", fallback=20)
                 pause_after_fade = self.config.getfloat(
                     "pause_after_fade", fallback=0.0
                 )
                 interval = self.config.getfloat("interval", fallback=0.05)
 
-            stop_color = set_gradient(
+            stop_color = await set_gradient(
                 self.rgb, self.colors, steps, pause_after_fade, interval, stop_color
             )
+        self.running = False
 
-    def reset(self, config: ConfigType) -> None:
+    async def reset(self, config: ConfigType) -> None:
         """Reset the thread's color list"""
         input_fn = os.path.expanduser(config["input"])
         color_count = config.getint("max_palette_size", fallback=10)
         quality = config.getint("quality", fallback=10)
 
-        with self.lock:
+        async with self.lock:
             self.colors = cycle(get_colors(input_fn, color_count, quality))
             self.config = config
 
@@ -113,14 +118,14 @@ class Effect:
         return ConfigType(parser, "rgb")
 
 
-def set_gradient(
+async def set_gradient(
     rgb: RGB,
     colors: cycle[Color],
     steps: int,
     pause_after_fade: float,
     interval: float,
     prev_stop_color: Color | None,
-    sleep: Callable[[float], None] = time.sleep,
+    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
 ) -> Color:
     """Set the next gradient in the cycle
 
@@ -140,10 +145,10 @@ def set_gradient(
         for device in rgb.devices:
             device.set_color(rgb_color)
         if is_image_color and pause_after_fade:
-            sleep(pause_after_fade / 2)
+            await sleep(pause_after_fade / 2)
 
         if not (is_image_color and pause_after_fade):
-            sleep(interval)
+            await sleep(interval)
 
     return stop_color
 
@@ -190,10 +195,12 @@ def get_effect() -> Effect:
     return Effect()
 
 
-def plugin(_colors: ColorList, config: ConfigType) -> None:
+def plugin(_colors: ColorList, config: ConfigType) -> asyncio.Task:
     """RGB plugin handler"""
     effect = get_effect()
-    effect.reset(config)
+    reset_task = asyncio.create_task(effect.reset(config))
 
-    if not effect.thread.is_alive():
-        effect.thread.start()
+    if not effect.is_alive():
+        asyncio.create_task(effect.run())
+
+    return reset_task
