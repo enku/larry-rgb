@@ -8,7 +8,7 @@ from configparser import ConfigParser
 from dataclasses import dataclass
 from functools import cache, cached_property
 from itertools import cycle
-from typing import Callable, Awaitable
+from typing import Awaitable, Callable
 from xml.etree import ElementTree
 
 import cairosvg
