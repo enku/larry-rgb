@@ -17,6 +17,7 @@ from colorthief import ColorThief
 from larry import Color, ColorList
 from larry.config import ConfigType
 
+from larry_rgb import colorlib
 from larry_rgb import hardware as hw
 
 
@@ -88,7 +89,7 @@ class Effect:
         quality = config.getint("quality", fallback=10)
 
         async with self.lock:
-            self.colors = cycle(get_colors(input_fn, color_count, quality))
+            self.colors = cycle(colorlib.get_colors(input_fn, color_count, quality))
             self.config = config
 
     def initial_config(self) -> ConfigType:
@@ -117,7 +118,7 @@ async def set_gradient(
     cycle, otherwise it's the prev_stop_color. The stop color is the next color in
     the colors cycle.
     """
-    end_colors = get_gradient_colors(colors, prev_stop_color)
+    end_colors = colorlib.get_gradient_colors(colors, prev_stop_color)
     end_wait = pause_after_fade / 2
 
     for color in Color.gradient(*end_colors, steps):
@@ -125,36 +126,6 @@ async def set_gradient(
         await sleep(end_wait if color in end_colors and pause_after_fade else interval)
 
     return end_colors[1]
-
-
-def get_gradient_colors(
-    colors: cycle[Color], prev_stop_color: Color | None
-) -> tuple[Color, Color]:
-    """Return the start_color and stop_color for the next gradient cycle"""
-    return prev_stop_color if prev_stop_color else next(colors), next(colors)
-
-
-def get_colors(input_fn: str, color_count: int, quality: int) -> ColorList:
-    """Return the dominant color of the given image"""
-    try:
-        color_thief = ColorThief(input_fn)
-    except PIL.UnidentifiedImageError as unidentified_image_error:
-        # Maybe it's an SVG
-        with tempfile.NamedTemporaryFile("wb", buffering=0) as tmp:
-            try:
-                tmp.write(convert_svg_to_png(input_fn))
-            except ElementTree.ParseError:
-                # Not a (good) SVG either. Raise the original error
-                raise unidentified_image_error from unidentified_image_error
-
-            color_thief = ColorThief(tmp.name)
-
-    return [Color(*rgb) for rgb in color_thief.get_palette(color_count, quality)]
-
-
-def convert_svg_to_png(svg_fn: str) -> bytes:
-    """Convert the given svg filename to PNG and return the PNG bytes"""
-    return cairosvg.svg2png(url=svg_fn)
 
 
 @cache
