@@ -8,9 +8,8 @@ from unittest import IsolatedAsyncioTestCase, TestCase
 from unittest.mock import AsyncMock, Mock, call, patch
 
 import PIL
-from larry import ConfigType
 from larry.color import Color
-from openrgb import OpenRGBClient
+from larry.config import ConfigType
 from openrgb.utils import RGBColor
 
 import larry_rgb
@@ -21,24 +20,6 @@ IMAGE = TEST_DIR / "input.jpeg"
 RED = Color("red")
 GREEN = Color("green")
 BLUE = Color("blue")
-
-
-def create_mock_openrgb(devices: int, leds=1, zones=1) -> OpenRGBClient:
-    mock_devices = []
-    for i in range(devices):
-        if isinstance(leds, int):
-            mock_leds = [Mock() for _ in range(leds)]
-        else:
-            mock_leds = [Mock() for _ in range(leds[i])]
-
-        if isinstance(zones, int):
-            mock_zones = [Mock() for _ in range(zones)]
-        else:
-            mock_zones = [Mock() for _ in range(zones[i])]
-
-        mock_devices.append(Mock(leds=mock_leds, zones=mock_zones))
-
-    return Mock(spec=OpenRGBClient, ee_devices=mock_devices)
 
 
 class PluginTestCase(IsolatedAsyncioTestCase):
@@ -130,56 +111,28 @@ def make_config(**kwargs) -> ConfigType:
     return config
 
 
-@patch.object(larry_rgb, "OpenRGBClient")
+@patch.object(larry_rgb.hw, "make_client", autospec=True)
 class RGBDataclassTestCase(TestCase):
     """Tests for the RGB dataclass"""
 
-    def test_instantiates_client(self, mock_openrgb_client_cls):
+    def test_instantiates_client(self, mock_make_client):
         rgb = larry_rgb.RGB(address="polaris.invalid")
-        mock_client = mock_openrgb_client_cls.return_value
+        mock_client = mock_make_client.return_value
 
-        mock_openrgb_client_cls.assert_called_once_with("polaris.invalid", 6742)
         self.assertEqual(rgb.openrgb, mock_client)
+        mock_make_client.assert_called_once_with("polaris.invalid", 6742)
 
-    def test_get_devices(self, mock_openrgb_client_cls):
-        mock_openrgb_client_cls.return_value = create_mock_openrgb(3)
-
-        rgb = larry_rgb.RGB(address="polaris.invalid")
-
-        self.assertEqual(len(rgb.devices), 3)
-
-    def test_put_devices_in_direct_mode(self, mock_openrgb_client_cls):
-        mock_openrgb_client_cls.return_value = create_mock_openrgb(3)
-
-        rgb = larry_rgb.RGB(address="polaris.invalid")
-
-        for device in rgb.devices:
-            device.set_mode.assert_called_with("Direct")
-
-    def test_resizes_zones(self, mock_openrgb_client_cls):
-        mock_openrgb_client_cls.return_value = create_mock_openrgb(
-            3, leds=[3, 2, 1], zones=[1, 2, 3]
-        )
-
-        rgb = larry_rgb.RGB(address="polaris.invalid")
-
-        rgb.devices[0].zones[0].resize.assert_called_once_with(3)
-        rgb.devices[1].zones[0].resize.assert_called_once_with(2)
-        rgb.devices[1].zones[1].resize.assert_called_once_with(2)
-        rgb.devices[2].zones[0].resize.assert_called_once_with(1)
-        rgb.devices[2].zones[1].resize.assert_called_once_with(1)
-        rgb.devices[2].zones[2].resize.assert_called_once_with(1)
-
-    def test_set_color(self, mock_openrgb_client_cls):
-        mock_openrgb_client_cls.return_value = create_mock_openrgb(3)
-
+    def test_set_color(self, _mock_make_client):
         rgb = larry_rgb.RGB(address="polaris.invalid")
         blue = Color("blue")
 
+        rgb.openrgb.ee_devices = [Mock(), Mock(), Mock()]
+
         rgb.set_color(blue)
 
-        for device in rgb.devices:
-            device.set_color.assert_called_once_with(RGBColor(red=0, green=0, blue=255))
+        rgb_blue = RGBColor(red=0, green=0, blue=255)
+        for device in rgb.openrgb.ee_devices:
+            device.set_color.assert_called_once_with(rgb_blue)
 
 
 class GetGradientColors(TestCase):

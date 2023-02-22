@@ -16,9 +16,8 @@ import PIL
 from colorthief import ColorThief
 from larry import Color, ColorList
 from larry.config import ConfigType
-from openrgb import OpenRGBClient
-from openrgb.orgb import Device
-from openrgb.utils import RGBColor
+
+from larry_rgb import hardware as hw
 
 
 @dataclass
@@ -26,29 +25,14 @@ class RGB:
     """Config for OpenRGB"""
 
     address: str = "127.0.0.1"
-    port: int = 6742
+    port: int = hw.OPENRGB_PORT
 
     def __post_init__(self) -> None:
-        self.openrgb = OpenRGBClient(self.address, self.port)
-        for device in self.openrgb.ee_devices:
-            device.set_mode("Direct")
-
-            # Not resizing the zones on OpenRGB 0.8 results in not all rgbs getting set
-            # on my system.  See https://github.com/jath03/openrgb-python/discussions/64
-            led_count = len(device.leds)
-            for zone in device.zones:
-                zone.resize(led_count)
+        self.openrgb = hw.make_client(self.address, self.port)
 
     def set_color(self, color: Color) -> None:
         """Send the given color to openrgb"""
-        color_all_devices(self.openrgb, color)
-
-    @property
-    def devices(self) -> list[Device]:
-        """Return the list of direct-mode compatible RGB devices"""
-        assert hasattr(self, "openrgb")
-
-        return self.openrgb.ee_devices
+        hw.color_all_devices(self.openrgb, color)
 
 
 class Effect:
@@ -171,17 +155,6 @@ def get_colors(input_fn: str, color_count: int, quality: int) -> ColorList:
 def convert_svg_to_png(svg_fn: str) -> bytes:
     """Convert the given svg filename to PNG and return the PNG bytes"""
     return cairosvg.svg2png(url=svg_fn)
-
-
-def color_all_devices(openrgb: OpenRGBClient, color: Color) -> None:
-    """Set every device's color to the given color"""
-    for device in openrgb.ee_devices:
-        color_device(device, color)
-
-
-def color_device(device: Device, color: Color):
-    """Set the given device's color to the given color"""
-    device.set_color(RGBColor(color.red, color.green, color.blue))
 
 
 @cache
