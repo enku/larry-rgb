@@ -161,7 +161,7 @@ def get_colors(input_fn: str, color_count: int, quality: int) -> ColorList:
                 tmp.write(convert_svg_to_png(input_fn))
             except ElementTree.ParseError:
                 # Not a (good) SVG either. Raise the original error
-                raise unidentified_image_error
+                raise unidentified_image_error from unidentified_image_error
 
             color_thief = ColorThief(tmp.name)
 
