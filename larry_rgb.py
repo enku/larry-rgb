@@ -14,7 +14,8 @@ from xml.etree import ElementTree
 import cairosvg
 import PIL
 from colorthief import ColorThief
-from larry import Color, ColorList, ConfigType
+from larry import Color, ColorList
+from larry.config import ConfigType
 from openrgb import OpenRGBClient
 from openrgb.orgb import Device
 from openrgb.utils import RGBColor
