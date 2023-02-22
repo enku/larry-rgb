@@ -41,8 +41,7 @@ class RGB:
 
     def set_color(self, color: Color) -> None:
         """Send the given color to openrgb"""
-        for device in self.openrgb.ee_devices:
-            device.set_color(RGBColor(color.red, color.green, color.blue))
+        color_all_devices(self.openrgb, color)
 
     @property
     def devices(self) -> list[Device]:
@@ -134,24 +133,14 @@ async def set_gradient(
     cycle, otherwise it's the prev_stop_color. The stop color is the next color in
     the colors cycle.
     """
-    color_set: set[Color] = set()
-    start_color, stop_color = get_gradient_colors(colors, prev_stop_color)
-    color_set.add(start_color)
-    color_set.add(stop_color)
+    end_colors = get_gradient_colors(colors, prev_stop_color)
+    end_wait = pause_after_fade / 2
 
-    for color in Color.gradient(start_color, stop_color, steps):
-        is_image_color = color in color_set
-        rgb_color = RGBColor(color.red, color.green, color.blue)
+    for color in Color.gradient(*end_colors, steps):
+        rgb.set_color(color)
+        await sleep(end_wait if color in end_colors and pause_after_fade else interval)
 
-        for device in rgb.devices:
-            device.set_color(rgb_color)
-        if is_image_color and pause_after_fade:
-            await sleep(pause_after_fade / 2)
-
-        if not (is_image_color and pause_after_fade):
-            await sleep(interval)
-
-    return stop_color
+    return end_colors[1]
 
 
 def get_gradient_colors(
@@ -188,6 +177,17 @@ def get_colors(
 def convert_svg_to_png(svg_fn: str) -> bytes:
     """Convert the given svg filename to PNG and return the PNG bytes"""
     return cairosvg.svg2png(url=svg_fn)
+
+
+def color_all_devices(openrgb: OpenRGBClient, color: Color) -> None:
+    """Set every device's color to the given color"""
+    for device in openrgb.ee_devices:
+        color_device(device, color)
+
+
+def color_device(device: Device, color: Color):
+    """Set the given device's color to the given color"""
+    device.set_color(RGBColor(color.red, color.green, color.blue))
 
 
 @cache

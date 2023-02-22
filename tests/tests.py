@@ -220,11 +220,8 @@ class SetGradient(IsolatedAsyncioTestCase):
         self.assertEqual(color, GREEN)
 
         gradient = Color.gradient(RED, GREEN, 5)
-        calls = [
-            call(RGBColor(color.red, color.green, color.blue)) for color in gradient
-        ]
-        for device in mock_rgb.devices:
-            self.assertEqual(device.set_color.call_args_list, calls)
+        calls = [call(color) for color in gradient]
+        self.assertEqual(mock_rgb.set_color.call_args_list, calls)
 
         calls = [call(10.0), call(6.0), call(6.0), call(6.0), call(10.0)]
         self.assertEqual(mock_sleep.call_args_list, calls)
@@ -266,11 +263,8 @@ class SetGradient(IsolatedAsyncioTestCase):
         )
 
         gradient = Color.gradient(prev_stop_color, RED, 5)
-        calls = [
-            call(RGBColor(color.red, color.green, color.blue)) for color in gradient
-        ]
-        for device in mock_rgb.devices:
-            self.assertEqual(device.set_color.call_args_list, calls)
+        calls = [call(color) for color in gradient]
+        self.assertEqual(mock_rgb.set_color.call_args_list, calls)
 
         self.assertEqual(mock_sleep.call_count, 5)
         mock_sleep.assert_called_with(10.0)
