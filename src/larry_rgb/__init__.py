@@ -3,17 +3,12 @@ from __future__ import annotations
 
 import asyncio
 import os.path
-import tempfile
 from configparser import ConfigParser
 from dataclasses import dataclass
 from functools import cache, cached_property
 from itertools import cycle
 from typing import Awaitable, Callable
-from xml.etree import ElementTree
 
-import cairosvg
-import PIL
-from colorthief import ColorThief
 from larry import Color, ColorList
 from larry.config import ConfigType
 
