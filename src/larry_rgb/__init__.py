@@ -32,7 +32,7 @@ class RGB:
 
 
 class Effect:
-    """Effects thread"""
+    """Container for the Effect coroutine"""
 
     def __init__(self) -> None:
         self.config = self.initial_config()
@@ -60,7 +60,7 @@ class Effect:
         return RGB(address=address, port=port)
 
     async def run(self, config: ConfigType) -> None:  # pragma: no cover
-        """Effect thread target"""
+        """Run the effect"""
         await self.reset(config)
         stop_color = None
 
@@ -79,7 +79,7 @@ class Effect:
         self.running = False
 
     async def reset(self, config: ConfigType) -> None:
-        """Reset the thread's color list"""
+        """Reset the effect's color list"""
         input_fn = os.path.expanduser(config["input"])
         color_count = config.getint("max_palette_size", fallback=10)
         quality = config.getint("quality", fallback=10)
