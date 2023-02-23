@@ -26,15 +26,26 @@ class PluginTestCase(IsolatedAsyncioTestCase):
     def setUp(self):
         larry_rgb.get_effect.cache_clear()
 
-    async def test_instantiates_and_sets_effect(self):
+    async def test_instantiates_and_runs_effect(self):
         config = make_config(input=IMAGE)
 
         with patch.object(larry_rgb.Effect, "run") as mock_run:
             await larry_rgb.plugin([], config)
 
         effect = larry_rgb.get_effect()
-        self.assertIs(effect.config, config)
-        mock_run.assert_called_once_with()
+        mock_run.assert_called_once_with(config)
+
+    async def test_when_running_resets_config(self):
+        config = make_config(input=IMAGE, interval=500)
+        effect = larry_rgb.get_effect()
+
+        # Mock running state
+        effect.running = True
+
+        with patch.object(larry_rgb.Effect, "reset") as mock_reset:
+            await larry_rgb.plugin([], config)
+
+        mock_reset.assert_called_once_with(config)
 
     def test_get_effect_when_effect_not_exists(self):
         with patch.object(larry_rgb, "Effect", autospec=True) as mock_effect_cls:

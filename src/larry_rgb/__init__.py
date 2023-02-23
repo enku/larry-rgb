@@ -59,8 +59,9 @@ class Effect:
 
         return RGB(address=address, port=port)
 
-    async def run(self) -> None:  # pragma: no cover
+    async def run(self, config: ConfigType) -> None:  # pragma: no cover
         """Effect thread target"""
+        await self.reset(config)
         stop_color = None
 
         while not self.die:
@@ -132,9 +133,10 @@ def get_effect() -> Effect:
 def plugin(_colors: ColorList, config: ConfigType) -> asyncio.Task:
     """RGB plugin handler"""
     effect = get_effect()
-    reset_task = asyncio.create_task(effect.reset(config))
 
     if not effect.is_alive():
-        asyncio.create_task(effect.run())
+        task = asyncio.create_task(effect.run(config))
+    else:
+        task = asyncio.create_task(effect.reset(config))
 
-    return reset_task
+    return task
