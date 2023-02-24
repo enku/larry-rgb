@@ -38,7 +38,6 @@ class Effect:
         self.config = self.initial_config()
         self.lock = asyncio.Lock()
         self.colors: cycle[Color] = cycle([])
-        self.die = False
         self.running = False
 
     def is_alive(self) -> bool:
@@ -64,8 +63,10 @@ class Effect:
         await self.reset(config)
         stop_color = None
 
-        while not self.die:
+        async with self.lock:
             self.running = True
+
+        while self.running:
             async with self.lock:
                 steps = self.config.getint("gradient_steps", fallback=20)
                 pause_after_fade = self.config.getfloat(
@@ -77,6 +78,11 @@ class Effect:
                 self.rgb, self.colors, steps, pause_after_fade, interval, stop_color
             )
         self.running = False
+
+    async def stop(self):
+        """Queue the effect to stop"""
+        async with self.lock:
+            self.running = False
 
     async def reset(self, config: ConfigType) -> None:
         """Reset the effect's color list"""

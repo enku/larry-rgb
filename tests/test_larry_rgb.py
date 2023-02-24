@@ -87,6 +87,14 @@ class EffectTestCase(IsolatedAsyncioTestCase):
         self.assertIsInstance(rgb, larry_rgb.RGB)
         mock_rgb.assert_called_once_with(address="foo.invalid", port=666)
 
+    async def test_stop(self):
+        effect = larry_rgb.Effect()
+        effect.running = True
+
+        await effect.stop()
+
+        self.assertIs(effect.running, False)
+
 
 def make_config(**kwargs) -> ConfigType:
     parser = ConfigParser()
