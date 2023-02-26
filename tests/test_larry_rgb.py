@@ -10,7 +10,8 @@ from larry.config import ConfigType
 from openrgb.utils import RGBColor
 
 import larry_rgb
-from larry_rgb import colorlib
+from larry_rgb import colorlib, hardware
+from larry_rgb.config import Config
 
 TEST_DIR = Path(__file__).resolve().parent
 IMAGE = TEST_DIR / "input.jpeg"
@@ -33,7 +34,7 @@ class PluginTestCase(IsolatedAsyncioTestCase):
             await larry_rgb.plugin([], config)
 
         effect = larry_rgb.get_effect()
-        mock_run.assert_called_once_with(config)
+        mock_run.assert_called_once_with(Config(config))
 
     async def test_when_running_resets_config(self):
         config = make_config(input=IMAGE, interval=500)
@@ -45,7 +46,7 @@ class PluginTestCase(IsolatedAsyncioTestCase):
         with patch.object(larry_rgb.Effect, "reset") as mock_reset:
             await larry_rgb.plugin([], config)
 
-        mock_reset.assert_called_once_with(config)
+        mock_reset.assert_called_once_with(Config(config))
 
     def test_get_effect_when_effect_not_exists(self):
         with patch.object(larry_rgb, "Effect", autospec=True) as mock_effect_cls:
@@ -67,9 +68,9 @@ class EffectTestCase(IsolatedAsyncioTestCase):
     """Tests for the Effect class"""
 
     async def test_reset(self):
+        config = Config(make_config(input=IMAGE, max_palette_size=3, quality=15))
         effect = larry_rgb.Effect()
         image_colors = colorlib.get_colors(IMAGE, 3, 15)
-        config = make_config(input=IMAGE, max_palette_size=3, quality=15)
 
         with patch.object(larry_rgb, "cycle") as mock_cycle:
             await effect.reset(config)
@@ -77,15 +78,15 @@ class EffectTestCase(IsolatedAsyncioTestCase):
         self.assertIs(effect.config, config)
         self.assertEqual(effect.colors, mock_cycle(image_colors))
 
-    def test_rgb(self):
+    async def test_rgb(self):
+        config = Config(make_config(input=IMAGE, max_palette_size=3, quality=15))
         effect = larry_rgb.Effect()
-        effect.config["address"] = "foo.invalid:666"
 
         with patch.object(larry_rgb, "RGB", autospec=True) as mock_rgb:
+            await effect.reset(config)
             rgb = effect.rgb
 
         self.assertIsInstance(rgb, larry_rgb.RGB)
-        mock_rgb.assert_called_once_with(address="foo.invalid", port=666)
 
     async def test_stop(self):
         effect = larry_rgb.Effect()

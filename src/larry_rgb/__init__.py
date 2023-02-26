@@ -2,8 +2,6 @@
 from __future__ import annotations
 
 import asyncio
-import os.path
-from configparser import ConfigParser
 from dataclasses import dataclass
 from functools import cache, cached_property
 from itertools import cycle
@@ -14,6 +12,7 @@ from larry.config import ConfigType
 
 from larry_rgb import colorlib
 from larry_rgb import hardware as hw
+from larry_rgb.config import Config
 
 
 @dataclass
@@ -35,7 +34,7 @@ class Effect:
     """Container for the Effect coroutine"""
 
     def __init__(self) -> None:
-        self.config = self.initial_config()
+        self.config: Config
         self.lock = asyncio.Lock()
         self.colors: cycle[Color] = cycle([])
         self.running = False
@@ -50,15 +49,16 @@ class Effect:
 
         A (cached) property so we only instantiate it once, lazily
         """
-        assert self.config is not None
+        if not hasattr(self, "config"):
+            raise RuntimeError("Effect has not been (re)set")
 
-        address_and_port = self.config.get("address", fallback="localhost")
+        address_and_port = self.config.address
         address, _, port_str = address_and_port.partition(":")
         port = int(port_str) if port_str else 6742
 
         return RGB(address=address, port=port)
 
-    async def run(self, config: ConfigType) -> None:  # pragma: no cover
+    async def run(self, config: Config) -> None:  # pragma: no cover
         """Run the effect"""
         await self.reset(config)
         stop_color = None
@@ -68,15 +68,14 @@ class Effect:
 
         while self.running:
             async with self.lock:
-                steps = self.config.getint("gradient_steps", fallback=20)
-                pause_after_fade = self.config.getfloat(
-                    "pause_after_fade", fallback=0.0
+                stop_color = await set_gradient(
+                    self.rgb,
+                    self.colors,
+                    self.config.steps,
+                    self.config.pause_after_fade,
+                    self.config.interval,
+                    stop_color,
                 )
-                interval = self.config.getfloat("interval", fallback=0.05)
-
-            stop_color = await set_gradient(
-                self.rgb, self.colors, steps, pause_after_fade, interval, stop_color
-            )
         self.running = False
 
     async def stop(self):
@@ -84,25 +83,15 @@ class Effect:
         async with self.lock:
             self.running = False
 
-    async def reset(self, config: ConfigType) -> None:
+    async def reset(self, config: Config) -> None:
         """Reset the effect's color list"""
-        input_fn = os.path.expanduser(config["input"])
-        color_count = config.getint("max_palette_size", fallback=10)
-        quality = config.getint("quality", fallback=10)
-
         async with self.lock:
-            self.colors = cycle(colorlib.get_colors(input_fn, color_count, quality))
+            self.colors = cycle(
+                colorlib.get_colors(
+                    config.input, config.max_palette_size, config.quality
+                )
+            )
             self.config = config
-
-    def initial_config(self) -> ConfigType:
-        """Return a dummy config.
-
-        Because the initializer needs one
-        """
-        parser = ConfigParser()
-        parser.add_section("rgb")
-
-        return ConfigType(parser, "rgb")
 
 
 async def set_gradient(
@@ -136,9 +125,10 @@ def get_effect() -> Effect:
     return Effect()
 
 
-def plugin(_colors: ColorList, config: ConfigType) -> asyncio.Task:
+def plugin(_colors: ColorList, larry_config: ConfigType) -> asyncio.Task:
     """RGB plugin handler"""
     effect = get_effect()
+    config = Config(larry_config)
 
     if not effect.is_alive():
         task = asyncio.create_task(effect.run(config))
