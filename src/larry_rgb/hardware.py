@@ -13,7 +13,7 @@ def color_all_devices(openrgb: OpenRGBClient, color: Color) -> None:
         color_device(device, color)
 
 
-def color_device(device: Device, color: Color):
+def color_device(device: Device, color: Color) -> None:
     """Set the given device's color to the given color"""
     device.set_color(RGBColor(color.red, color.green, color.blue))
 
