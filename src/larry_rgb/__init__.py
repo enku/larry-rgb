@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
 from functools import cache, cached_property
 from itertools import cycle
 from typing import Awaitable, Callable
@@ -13,21 +12,6 @@ from larry.config import ConfigType
 from larry_rgb import colorlib
 from larry_rgb import hardware as hw
 from larry_rgb.config import Config
-
-
-@dataclass
-class RGB:
-    """Config for OpenRGB"""
-
-    address: str = "127.0.0.1"
-    port: int = hw.OPENRGB_PORT
-
-    def __post_init__(self) -> None:
-        self.openrgb = hw.make_client(self.address, self.port)
-
-    def set_color(self, color: Color) -> None:
-        """Send the given color to openrgb"""
-        hw.color_all_devices(self.openrgb, color)
 
 
 class Effect:
@@ -44,7 +28,7 @@ class Effect:
         return self.running
 
     @cached_property
-    def rgb(self) -> RGB:
+    def rgb(self) -> hw.RGB:
         """Returns the RGB instance.
 
         A (cached) property so we only instantiate it once, lazily
@@ -56,7 +40,7 @@ class Effect:
         address, _, port_str = address_and_port.partition(":")
         port = int(port_str) if port_str else 6742
 
-        return RGB(address=address, port=port)
+        return hw.RGB(address=address, port=port)
 
     async def run(self, config: Config) -> None:  # pragma: no cover
         """Run the effect"""
@@ -95,7 +79,7 @@ class Effect:
 
 
 async def set_gradient(
-    rgb: RGB,
+    rgb: hw.RGB,
     colors: cycle[Color],
     steps: int,
     pause_after_fade: float,

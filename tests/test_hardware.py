@@ -88,3 +88,27 @@ class MakeClientTestCase(unittest.TestCase):
         client.ee_devices[2].zones[0].resize.assert_called_once_with(1)
         client.ee_devices[2].zones[1].resize.assert_called_once_with(1)
         client.ee_devices[2].zones[2].resize.assert_called_once_with(1)
+
+
+@mock.patch.object(hw, "make_client", autospec=True)
+class RGBDataclassTestCase(unittest.TestCase):
+    """Tests for the RGB dataclass"""
+
+    def test_instantiates_client(self, mock_make_client):
+        rgb = hw.RGB(address="polaris.invalid")
+        mock_client = mock_make_client.return_value
+
+        self.assertEqual(rgb.openrgb, mock_client)
+        mock_make_client.assert_called_once_with("polaris.invalid", 6742)
+
+    def test_set_color(self, _mock_make_client):
+        rgb = hw.RGB(address="polaris.invalid")
+        blue = larry.Color("blue")
+
+        rgb.openrgb.ee_devices = [mock.Mock(), mock.Mock(), mock.Mock()]
+
+        rgb.set_color(blue)
+
+        rgb_blue = RGBColor(red=0, green=0, blue=255)
+        for device in rgb.openrgb.ee_devices:
+            device.set_color.assert_called_once_with(rgb_blue)

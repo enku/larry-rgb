@@ -1,4 +1,6 @@
 """Hardware functions for larry_rgb"""
+from dataclasses import dataclass
+
 from larry import Color
 from openrgb import OpenRGBClient
 from openrgb.orgb import Device
@@ -32,3 +34,18 @@ def make_client(address: str, port: int = OPENRGB_PORT) -> OpenRGBClient:
             zone.resize(led_count)
 
     return openrgb
+
+
+@dataclass
+class RGB:
+    """Config for OpenRGB"""
+
+    address: str = "127.0.0.1"
+    port: int = OPENRGB_PORT
+
+    def __post_init__(self) -> None:
+        self.openrgb = make_client(self.address, self.port)
+
+    def set_color(self, color: Color) -> None:
+        """Send the given color to openrgb"""
+        color_all_devices(self.openrgb, color)

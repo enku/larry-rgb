@@ -2,12 +2,11 @@
 from configparser import ConfigParser
 from itertools import cycle
 from pathlib import Path
-from unittest import IsolatedAsyncioTestCase, TestCase
+from unittest import IsolatedAsyncioTestCase
 from unittest.mock import AsyncMock, Mock, call, patch
 
 from larry.color import Color
 from larry.config import ConfigType
-from openrgb.utils import RGBColor
 
 import larry_rgb
 from larry_rgb import colorlib, hardware
@@ -33,7 +32,7 @@ class PluginTestCase(IsolatedAsyncioTestCase):
         with patch.object(larry_rgb.Effect, "run") as mock_run:
             await larry_rgb.plugin([], config)
 
-        effect = larry_rgb.get_effect()
+        larry_rgb.get_effect()
         mock_run.assert_called_once_with(Config(config))
 
     async def test_when_running_resets_config(self):
@@ -82,11 +81,11 @@ class EffectTestCase(IsolatedAsyncioTestCase):
         config = Config(make_config(input=IMAGE, max_palette_size=3, quality=15))
         effect = larry_rgb.Effect()
 
-        with patch.object(larry_rgb, "RGB", autospec=True) as mock_rgb:
+        with patch("larry_rgb.hw.RGB", autospec=True) as mock_rgb:
             await effect.reset(config)
             rgb = effect.rgb
 
-        self.assertIsInstance(rgb, larry_rgb.RGB)
+        self.assertIs(rgb, mock_rgb.return_value)
 
     async def test_stop(self):
         effect = larry_rgb.Effect()
@@ -108,35 +107,11 @@ def make_config(**kwargs) -> ConfigType:
     return config
 
 
-@patch.object(larry_rgb.hw, "make_client", autospec=True)
-class RGBDataclassTestCase(TestCase):
-    """Tests for the RGB dataclass"""
-
-    def test_instantiates_client(self, mock_make_client):
-        rgb = larry_rgb.RGB(address="polaris.invalid")
-        mock_client = mock_make_client.return_value
-
-        self.assertEqual(rgb.openrgb, mock_client)
-        mock_make_client.assert_called_once_with("polaris.invalid", 6742)
-
-    def test_set_color(self, _mock_make_client):
-        rgb = larry_rgb.RGB(address="polaris.invalid")
-        blue = Color("blue")
-
-        rgb.openrgb.ee_devices = [Mock(), Mock(), Mock()]
-
-        rgb.set_color(blue)
-
-        rgb_blue = RGBColor(red=0, green=0, blue=255)
-        for device in rgb.openrgb.ee_devices:
-            device.set_color.assert_called_once_with(rgb_blue)
-
-
 class SetGradient(IsolatedAsyncioTestCase):
     """Tests for the set_gradient() method"""
 
     async def test_with_none(self):
-        mock_rgb = Mock(spec=larry_rgb.RGB)()
+        mock_rgb = Mock(spec=hardware.RGB)()
         mock_rgb.devices = [Mock(), Mock(), Mock()]
         mock_sleep = AsyncMock()
 
@@ -175,7 +150,7 @@ class SetGradient(IsolatedAsyncioTestCase):
 
     async def test_with_prev_stop_color(self):
         prev_stop_color = Color(45, 23, 212)
-        mock_rgb = Mock(spec=larry_rgb.RGB)()
+        mock_rgb = Mock(spec=hardware.RGB)()
         mock_rgb.devices = [Mock(), Mock(), Mock()]
         mock_sleep = AsyncMock()
 
