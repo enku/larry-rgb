@@ -16,7 +16,7 @@ class Config:
         return self.config.get("address", fallback="localhost")
 
     @property
-    def gradient_steps(self) -> int:
+    def steps(self) -> int:
         """The number of steps (colors) for the color gradients"""
         return self.config.getint("gradient_steps", fallback=20)
 
