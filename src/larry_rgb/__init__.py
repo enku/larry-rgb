@@ -69,12 +69,14 @@ class Effect:
 
     async def reset(self, config: Config) -> None:
         """Reset the effect's color list"""
+        colors = colorlib.get_colors(
+            config.input, config.max_palette_size, config.quality
+        )
+        if config.pastelize:
+            colors = [color.pastelize() for color in colors]
+
         async with self.lock:
-            self.colors = cycle(
-                colorlib.get_colors(
-                    config.input, config.max_palette_size, config.quality
-                )
-            )
+            self.colors = cycle(colors)
             self.config = config
 
 

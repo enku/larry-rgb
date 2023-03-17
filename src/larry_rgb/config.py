@@ -52,3 +52,7 @@ class Config:
             return self.config == other.config
 
         return NotImplemented
+
+    @property
+    def pastelize(self) -> bool:
+        return self.config.getboolean("pastelize", False)
