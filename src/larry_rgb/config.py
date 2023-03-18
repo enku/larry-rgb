@@ -55,4 +55,8 @@ class Config:
 
     @property
     def pastelize(self) -> bool:
+        """Whether or not to pastelize the colors acquired from the input image
+
+        The default is False.
+        """
         return self.config.getboolean("pastelize", False)
