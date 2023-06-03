@@ -1,6 +1,7 @@
 /.coverage
 /.envrc
 /.mypy_cache/
+/.pdm-python
 /.pdm.toml
 /__pypackages__/
 /dist
