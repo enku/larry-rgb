@@ -1,6 +1,7 @@
 """LarryRGB config"""
 import os.path
 
+from larry import Color
 from larry.config import ConfigType
 
 
@@ -60,3 +61,10 @@ class Config:
         The default is False.
         """
         return self.config.getboolean("pastelize", False)
+
+    @property
+    def colors(self) -> list[Color]:
+        """colors to use instead of image-generated colors"""
+        color_str = self.config.get("colors", fallback="").strip()
+
+        return [Color(item) for item in color_str.split()]

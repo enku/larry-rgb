@@ -93,6 +93,16 @@ class EffectTestCase(IsolatedAsyncioTestCase):
         self.assertEqual(effect.colors, mock_cycle.return_value)
         mock_cycle.assert_called_once_with(pastel_colors)
 
+    async def test_reset_with_colors(self):
+        config = Config(make_config(input=IMAGE, colors="#ff0000 #000000"))
+        effect = larry_rgb.Effect()
+
+        with patch.object(larry_rgb, "cycle") as mock_cycle:
+            await effect.reset(config)
+
+        self.assertEqual(effect.colors, mock_cycle.return_value)
+        mock_cycle.assert_called_once_with([Color("#ff0000"), Color("#000000")])
+
     async def test_rgb(self):
         config = Config(make_config(input=IMAGE, max_palette_size=3, quality=15))
         effect = larry_rgb.Effect()
