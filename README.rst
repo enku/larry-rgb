@@ -44,7 +44,7 @@ Install ``larry-rgb``::
     # How many steps in the transition from color to color
     gradient_steps = 20
 
-    # Maxiumum number of colors to get from the input image
+    # Maximum number of colors to get from the input image
     max_palette_size = 10
 
     # Measure of processing used to get the best palette colors. 1 is the

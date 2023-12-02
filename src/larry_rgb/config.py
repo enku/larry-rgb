@@ -33,7 +33,7 @@ class Config:
 
     @property
     def max_palette_size(self) -> int:
-        """Maximum number of colors to aquire from the input image"""
+        """Maximum number of colors to acquire from the input image"""
         return self.config.getint("max_palette_size", fallback=10)
 
     @property
