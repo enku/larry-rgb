@@ -158,6 +158,7 @@ _T = TypeVar("_T")
 def ensure_range(
     value: _T, value_range: tuple[_T, _T], error: str | None = None
 ) -> None:
+    """Raise ValueError if value is not withn the given range"""
     if not value_range[0] <= value <= value_range[1]:
         if error is None:
             error = f"Value {value!r} is out of range {value_range!r}"

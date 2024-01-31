@@ -203,7 +203,7 @@ class SetGradient(IsolatedAsyncioTestCase):
         steps = 5
         interval = 6.0
         pause_after_fade = 20.0
-        color = await larry_rgb.set_gradient(
+        await larry_rgb.set_gradient(
             mock_rgb,
             colors,
             steps,
