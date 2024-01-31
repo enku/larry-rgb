@@ -68,3 +68,8 @@ class Config:
         color_str = self.config.get("colors", fallback="").strip()
 
         return [Color(item) for item in color_str.split()]
+
+    @property
+    def intensity(self) -> float:
+        """Amount of intensity to add to the colors (between -1 and 1)"""
+        return self.config.getfloat("intensity", fallback=0.0)

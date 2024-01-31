@@ -4,9 +4,10 @@ from __future__ import annotations
 import asyncio
 from functools import cache, cached_property
 from itertools import cycle
-from typing import Awaitable, Callable
+from typing import Awaitable, Callable, TypeVar
 
 from larry import Color, ColorList
+from larry.color import clip
 from larry.config import ConfigType
 
 from larry_rgb import colorlib
@@ -75,6 +76,8 @@ class Effect:
         if config.pastelize:
             colors = [color.pastelize() for color in colors]
 
+        colors = intensify_colors(colors, config.intensity)
+
         async with self.lock:
             self.colors = cycle(colors)
             self.config = config
@@ -111,6 +114,31 @@ def get_effect() -> Effect:
     return Effect()
 
 
+def intensify_colors(colors: ColorList, amount: float):
+    """Return new list of colors with saturation intensified by given amount
+
+    amount is a value between -1 and 1 (inclusive)
+
+    =0 means same intensity (same color)
+    >0 means more intensity (saturation)
+    <0 means less intensity (towards gray)
+    """
+    ensure_range(
+        amount, (-1, 1), f"Intensity amount must be between -1 and 1: {amount}"
+    )
+
+    if amount == 0:
+        # avoid rounding issues
+        return list(colors)
+
+    factor = 1 + amount
+    return [
+        Color.from_hsv((hsv[0], clip(factor * hsv[1]), hsv[2]))
+        for color in colors
+        if (hsv := color.to_hsv())
+    ]
+
+
 def plugin(_colors: ColorList, larry_config: ConfigType) -> asyncio.Task:
     """RGB plugin handler"""
     effect = get_effect()
@@ -122,3 +150,15 @@ def plugin(_colors: ColorList, larry_config: ConfigType) -> asyncio.Task:
         task = asyncio.create_task(effect.reset(config))
 
     return task
+
+
+_T = TypeVar("_T")
+
+
+def ensure_range(
+    value: _T, value_range: tuple[_T, _T], error: str | None = None
+) -> None:
+    if not value_range[0] <= value <= value_range[1]:
+        if error is None:
+            error = f"Value {value!r} is out of range {value_range!r}"
+        raise ValueError(error)

@@ -2,7 +2,7 @@
 from configparser import ConfigParser
 from itertools import cycle
 from pathlib import Path
-from unittest import IsolatedAsyncioTestCase
+from unittest import IsolatedAsyncioTestCase, TestCase
 from unittest.mock import AsyncMock, Mock, call, patch
 
 from larry.color import Color
@@ -92,6 +92,25 @@ class EffectTestCase(IsolatedAsyncioTestCase):
         self.assertIs(effect.config, config)
         self.assertEqual(effect.colors, mock_cycle.return_value)
         mock_cycle.assert_called_once_with(pastel_colors)
+
+    async def test_with_intensity_set(self):
+        config = Config(
+            make_config(
+                input=IMAGE,
+                max_palette_size=3,
+                quality=15,
+                pastelize=False,
+                intensity=0.5,
+            )
+        )
+        effect = larry_rgb.Effect()
+        image_colors = colorlib.get_colors(IMAGE, 3, 15)
+        intense_colors = larry_rgb.intensify_colors(image_colors, 0.5)
+
+        with patch.object(larry_rgb, "cycle") as mock_cycle:
+            await effect.reset(config)
+
+        mock_cycle.assert_called_once_with(intense_colors)
 
     async def test_reset_with_colors(self):
         config = Config(make_config(input=IMAGE, colors="#ff0000 #000000"))
@@ -200,3 +219,20 @@ class SetGradient(IsolatedAsyncioTestCase):
 
         self.assertEqual(mock_sleep.call_count, 5)
         mock_sleep.assert_called_with(10.0)
+
+
+class EnsureRangeTests(TestCase):
+    def test(self):
+        larry_rgb.ensure_range("l", ("a", "z"))
+
+        with self.assertRaises(ValueError) as ctx:
+            larry_rgb.ensure_range("z", ("a", "l"))
+
+        expected = "Value 'z' is out of range ('a', 'l')"
+        self.assertEqual(ctx.exception.args, (expected,))
+
+    def test_with_error_message(self):
+        with self.assertRaises(ValueError) as ctx:
+            larry_rgb.ensure_range(19, (1, 10), "This is a test")
+
+        self.assertEqual(ctx.exception.args, ("This is a test",))
