@@ -7,8 +7,8 @@ from itertools import cycle
 from typing import Awaitable, Callable, TypeVar
 
 from larry import Color, ColorList
-from larry.color import clip
 from larry.config import ConfigType
+from larry.utils import clip
 
 from larry_rgb import colorlib
 from larry_rgb import hardware as hw
