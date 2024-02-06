@@ -1,4 +1,5 @@
 """Hardware functions for larry_rgb"""
+
 from dataclasses import dataclass
 
 from larry import Color

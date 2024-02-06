@@ -1,4 +1,5 @@
 """LarryRGB config"""
+
 import os.path
 
 from larry import Color

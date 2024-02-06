@@ -1,4 +1,5 @@
 """Tests for larry_rgb.hardware"""
+
 # pylint: disable=missing-docstring
 import unittest
 from unittest import mock

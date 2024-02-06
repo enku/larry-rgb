@@ -1,4 +1,5 @@
 """Tests for the larry_rgb.colorlib module"""
+
 # pylint: disable=missing-docstring
 import importlib.metadata
 import tempfile

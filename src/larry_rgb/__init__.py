@@ -1,4 +1,5 @@
 """Set the OpenRGB rbg colors to the dominant color of the image"""
+
 from __future__ import annotations
 
 import asyncio
