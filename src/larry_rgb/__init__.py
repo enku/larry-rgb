@@ -143,14 +143,10 @@ def intensify_colors(colors: ColorList, amount: float):
 def plugin(_colors: ColorList, larry_config: ConfigType) -> asyncio.Task:
     """RGB plugin handler"""
     effect = get_effect()
+    func = effect.reset if effect.is_alive() else effect.run
     config = Config(larry_config)
 
-    if not effect.is_alive():
-        task = asyncio.create_task(effect.run(config))
-    else:
-        task = asyncio.create_task(effect.reset(config))
-
-    return task
+    return asyncio.create_task(func(config))
 
 
 _T = TypeVar("_T")
