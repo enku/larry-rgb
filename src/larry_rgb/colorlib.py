@@ -21,20 +21,34 @@ def get_gradient_colors(
 
 def get_colors(input_fn: str, color_count: int, quality: int) -> ColorList:
     """Return the dominant color of the given image"""
+    color_thief = get_color_thief(input_fn)
+
+    return [Color(*rgb) for rgb in color_thief.get_palette(color_count, quality)]
+
+
+def get_color_thief(filename: str) -> ColorThief:
+    """Return ColorThief instance given the filename.
+
+    If the given file is a raster file the ColorThief instance returned is applied to
+    that file.
+
+    If the given file is an SVG, it will be converted to a raster file and the
+    ColorThief instance returned is applied to the raster file
+
+    Otherwise PIL.UnidentifiedImageError is raised
+    """
     try:
-        color_thief = ColorThief(input_fn)
+        return ColorThief(filename)
     except PIL.UnidentifiedImageError as unidentified_image_error:
         # Maybe it's an SVG
         with tempfile.NamedTemporaryFile("wb", buffering=0) as tmp:
             try:
-                tmp.write(convert_svg_to_png(input_fn))
+                tmp.write(convert_svg_to_png(filename))
             except ElementTree.ParseError:
                 # Not a (good) SVG either. Raise the original error
                 raise unidentified_image_error from unidentified_image_error
 
-            color_thief = ColorThief(tmp.name)
-
-    return [Color(*rgb) for rgb in color_thief.get_palette(color_count, quality)]
+            return ColorThief(tmp.name)
 
 
 def convert_svg_to_png(svg_fn: str) -> bytes:
