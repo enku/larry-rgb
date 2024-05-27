@@ -102,9 +102,12 @@ async def set_gradient(
     end_colors = colorlib.get_gradient_colors(colors, prev_stop_color)
     end_wait = pause_after_fade / 2
 
+    previous_color = None
     for color in Color.gradient(*end_colors, steps):
-        rgb.set_color(color)
+        if color != previous_color:
+            rgb.set_color(color)
         await sleep(end_wait if color in end_colors and pause_after_fade else interval)
+        previous_color = color
 
     return end_colors[1]
 

@@ -220,6 +220,29 @@ class SetGradient(IsolatedAsyncioTestCase):
         self.assertEqual(mock_sleep.call_count, 5)
         mock_sleep.assert_called_with(10.0)
 
+    async def test_with_same_color_does_not_set_again(self):
+        color = Color(45, 23, 212)
+        mock_rgb = Mock(spec=hardware.RGB)()
+        mock_rgb.devices = [Mock(), Mock(), Mock()]
+        mock_sleep = AsyncMock()
+
+        colors = cycle([color])
+        steps = 5
+        interval = 6.0
+        pause_after_fade = 20.0
+
+        await larry_rgb.set_gradient(
+            mock_rgb,
+            colors,
+            steps,
+            pause_after_fade,
+            interval,
+            None,
+            mock_sleep,
+        )
+
+        mock_rgb.set_color.assert_called_once_with(color)
+
 
 class EnsureRangeTests(TestCase):
     def test(self):
