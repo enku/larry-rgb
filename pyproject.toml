@@ -49,3 +49,6 @@ source = ["larry_rgb"]
 # Maximum number of arguments for function / method.
 max-args = 10
 max-positional-arguments = 10
+
+[tool.black]
+skip-magic-trailing-comma = true
