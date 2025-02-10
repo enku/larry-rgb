@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from functools import cache, cached_property
 from itertools import cycle
-from typing import Awaitable, Callable, TypeVar
+from typing import Awaitable, Callable, Protocol, TypeVar
 
 from larry import Color, ColorList
 from larry.config import ConfigType
@@ -14,6 +14,12 @@ from larry.utils import clip
 from larry_rgb import colorlib
 from larry_rgb import hardware as hw
 from larry_rgb.config import Config
+
+
+class Comparable(Protocol):
+    """Something that supports <="""
+
+    def __le__(self, other: "Comparable") -> bool: ...
 
 
 class Effect:
@@ -152,7 +158,7 @@ def plugin(_colors: ColorList, larry_config: ConfigType) -> asyncio.Task:
     return asyncio.create_task(func(config))
 
 
-_T = TypeVar("_T")
+_T = TypeVar("_T", bound=Comparable)
 
 
 def ensure_range(
