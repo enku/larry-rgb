@@ -16,7 +16,7 @@ from larry_rgb import hardware as hw
 from larry_rgb.config import Config
 
 
-class Comparable(Protocol):
+class Comparable(Protocol):  # pylint: disable=too-few-public-methods
     """Something that supports <="""
 
     def __le__(self, other: "Comparable") -> bool: ...
