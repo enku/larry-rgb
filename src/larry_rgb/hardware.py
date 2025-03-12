@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from larry import Color
+from larry.color import Color
 from openrgb import OpenRGBClient
 from openrgb.orgb import Device
 from openrgb.utils import RGBColor

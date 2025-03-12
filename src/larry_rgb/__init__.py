@@ -7,7 +7,7 @@ from functools import cache, cached_property
 from itertools import cycle
 from typing import Awaitable, Callable, Protocol, TypeVar
 
-from larry import Color, ColorList
+from larry.color import Color, ColorList
 from larry.config import ConfigType
 from larry.utils import clip
 

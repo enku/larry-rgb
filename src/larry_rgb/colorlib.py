@@ -9,7 +9,7 @@ from xml.etree import ElementTree
 import cairosvg
 import PIL
 from colorthief import ColorThief
-from larry import Color, ColorList
+from larry.color import Color, ColorList
 
 
 def get_gradient_colors(

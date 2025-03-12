@@ -2,7 +2,7 @@
 
 import os.path
 
-from larry import Color
+from larry.color import Color
 from larry.config import ConfigType
 
 
