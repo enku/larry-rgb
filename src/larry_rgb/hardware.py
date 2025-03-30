@@ -1,6 +1,6 @@
 """Hardware functions for larry_rgb"""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from larry.color import Color
 from openrgb import OpenRGBClient
@@ -35,15 +35,16 @@ def make_client(address: str, port: int = OPENRGB_PORT) -> OpenRGBClient:
     return openrgb
 
 
-@dataclass
+@dataclass(frozen=True)
 class RGB:
     """Config for OpenRGB"""
 
     address: str = "127.0.0.1"
     port: int = OPENRGB_PORT
+    openrgb: OpenRGBClient = field(init=False)
 
     def __post_init__(self) -> None:
-        self.openrgb = make_client(self.address, self.port)
+        object.__setattr__(self, "openrgb", make_client(self.address, self.port))
 
     def set_color(self, color: Color) -> None:
         """Send the given color to openrgb"""
