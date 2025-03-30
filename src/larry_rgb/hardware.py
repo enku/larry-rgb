@@ -30,9 +30,7 @@ def make_client(address: str, port: int = OPENRGB_PORT) -> OpenRGBClient:
 
         # Not resizing the zones on OpenRGB 0.8 results in not all rgbs getting set on
         # my system.  See https://github.com/jath03/openrgb-python/discussions/64
-        led_count = len(device.leds)
-        for zone in device.zones:
-            zone.resize(led_count)
+        resize_device_zones(device)
 
     return openrgb
 
@@ -50,3 +48,15 @@ class RGB:
     def set_color(self, color: Color) -> None:
         """Send the given color to openrgb"""
         color_all_devices(self.openrgb, color)
+
+
+def resize_device_zones(device: Device, size: int | None = None) -> None:
+    """Resize device's zones to the given size
+
+    size defaults the the number of leds on the device
+    """
+    if size is None:
+        size = len(device.leds)
+
+    for zone in device.zones:
+        zone.resize(size)
