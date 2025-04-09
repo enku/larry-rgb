@@ -114,6 +114,7 @@ class RGBDataclassTestCase(unittest.TestCase):
         for device in rgb.openrgb.ee_devices:
             device.set_color.assert_called_once_with(rgb_blue)
 
+
 class ResizeDeviceZonesTestCase(unittest.TestCase):
     def test(self) -> None:
         Mock = mock.Mock
