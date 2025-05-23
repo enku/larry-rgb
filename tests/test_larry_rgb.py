@@ -37,7 +37,7 @@ class PluginTestCase(IsolatedAsyncioTestCase):
             await larry_rgb.plugin([], config)
 
         larry_rgb.get_effect()
-        mock_run.assert_called_once_with(Config(config))
+        mock_run.assert_called_once_with([], Config(config))
 
     async def test_when_running_resets_config(self):
         config = make_config(interval=500)

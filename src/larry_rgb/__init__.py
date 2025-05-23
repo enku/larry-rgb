@@ -50,9 +50,9 @@ class Effect:
 
         return hw.RGB(address=address, port=port)
 
-    async def run(self, config: Config) -> None:  # pragma: no cover
+    async def run(self, colors: ColorList, config: Config) -> None:  # pragma: no cover
         """Run the effect"""
-        await self.reset(config)
+        await self.reset(colors, config)
         stop_color = None
 
         async with self.lock:
@@ -153,9 +153,9 @@ def plugin(colors: ColorList, larry_config: ConfigType) -> asyncio.Task:
     """RGB plugin handler"""
     effect = get_effect()
     config = Config(larry_config)
-    func = partial(effect.reset, colors) if effect.is_alive() else effect.run
+    func = effect.reset if effect.is_alive() else effect.run
 
-    return asyncio.create_task(func(config))
+    return asyncio.create_task(func(colors, config))
 
 
 _T = TypeVar("_T", bound=Comparable)
