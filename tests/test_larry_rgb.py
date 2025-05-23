@@ -1,4 +1,5 @@
 # pylint: disable=missing-docstring
+import asyncio
 from configparser import ConfigParser
 from itertools import cycle
 from pathlib import Path
@@ -126,6 +127,21 @@ class EffectTestCase(IsolatedAsyncioTestCase):
             rgb = effect.rgb
 
         self.assertIs(rgb, mock_rgb.return_value)
+
+    async def test_run_calls_reset_with_correct_args(self):
+        config = make_config(colors="#ff0000 #000000")
+        effect = larry_rgb.get_effect()
+
+        with patch.object(effect, "reset", wraps=effect.reset) as effect_reset:
+            with patch.object(larry_rgb.Effect, "rgb"):
+                task = larry_rgb.plugin([], config)
+                try:
+                    pass
+                finally:
+                    await asyncio.sleep(0)
+                    effect.running = False
+                    await task
+                effect_reset.assert_called_with([], Config(config))
 
     async def test_stop(self):
         effect = larry_rgb.Effect()
