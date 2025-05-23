@@ -1,7 +1,5 @@
 """LarryRGB config"""
 
-import os.path
-
 from larry.color import Color
 from larry.config import ConfigType
 
@@ -23,11 +21,6 @@ class Config:
         return self.config.getint("gradient_steps", fallback=20)
 
     @property
-    def input(self) -> str:
-        """Input image file path"""
-        return os.path.expanduser(self.config["input"])
-
-    @property
     def interval(self) -> float:
         """Interval between each color in the gradient"""
         return self.config.getfloat("interval", fallback=0.05)
@@ -41,11 +34,6 @@ class Config:
     def pause_after_fade(self) -> float:
         """Number of seconds to pause between gradients"""
         return self.config.getfloat("pause_after_fade", fallback=0.0)
-
-    @property
-    def quality(self) -> int:
-        """Quality of image primary color calculation (higher is better)"""
-        return self.config.getint("quality", fallback=10)
 
     def __eq__(self, other) -> bool:
         other_configtype = getattr(other, "config", None)

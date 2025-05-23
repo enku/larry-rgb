@@ -5,8 +5,10 @@ from pathlib import Path
 from unittest import IsolatedAsyncioTestCase, TestCase
 from unittest.mock import AsyncMock, Mock, call, patch
 
+import numpy as np
 from larry.color import Color
 from larry.config import ConfigType
+from larry.image import RasterImage
 
 import larry_rgb
 from larry_rgb import colorlib, hardware
@@ -14,6 +16,8 @@ from larry_rgb.config import Config
 
 TEST_DIR = Path(__file__).resolve().parent
 IMAGE = TEST_DIR / "input.jpeg"
+np.random.seed(1)
+IMAGE_COLORS = list(RasterImage(IMAGE.read_bytes()).colors)
 
 RED = Color("red")
 GREEN = Color("green")
@@ -27,7 +31,7 @@ class PluginTestCase(IsolatedAsyncioTestCase):
         larry_rgb.get_effect.cache_clear()
 
     async def test_instantiates_and_runs_effect(self):
-        config = make_config(input=IMAGE)
+        config = make_config()
 
         with patch.object(larry_rgb.Effect, "run") as mock_run:
             await larry_rgb.plugin([], config)
@@ -36,7 +40,7 @@ class PluginTestCase(IsolatedAsyncioTestCase):
         mock_run.assert_called_once_with(Config(config))
 
     async def test_when_running_resets_config(self):
-        config = make_config(input=IMAGE, interval=500)
+        config = make_config(interval=500)
         effect = larry_rgb.get_effect()
 
         # Mock running state
@@ -45,7 +49,7 @@ class PluginTestCase(IsolatedAsyncioTestCase):
         with patch.object(larry_rgb.Effect, "reset") as mock_reset:
             await larry_rgb.plugin([], config)
 
-        mock_reset.assert_called_once_with(Config(config))
+        mock_reset.assert_called_once_with([], Config(config))
 
     def test_get_effect_when_effect_not_exists(self):
         with patch.object(larry_rgb, "Effect", autospec=True) as mock_effect_cls:
@@ -67,67 +71,58 @@ class EffectTestCase(IsolatedAsyncioTestCase):
     """Tests for the Effect class"""
 
     async def test_reset(self):
-        config = Config(make_config(input=IMAGE, max_palette_size=3, quality=15))
+        config = Config(make_config(max_palette_size=3))
         effect = larry_rgb.Effect()
-        image_colors = colorlib.get_colors(IMAGE, 3, 15)
 
         with patch.object(larry_rgb, "cycle") as mock_cycle:
-            await effect.reset(config)
+            await effect.reset(IMAGE_COLORS, config)
 
         self.assertIs(effect.config, config)
         self.assertEqual(effect.colors, mock_cycle.return_value)
-        mock_cycle.assert_called_once_with(image_colors)
+        mock_cycle.assert_called_once_with(
+            [Color(156, 125, 57), Color(224, 175, 65), Color(90, 80, 35)]
+        )
 
     async def test_reset_with_pastelize_true(self):
-        config = Config(
-            make_config(input=IMAGE, max_palette_size=3, quality=15, pastelize=True)
-        )
+        config = Config(make_config(max_palette_size=3, pastelize=True))
         effect = larry_rgb.Effect()
-        image_colors = colorlib.get_colors(IMAGE, 3, 15)
-        pastel_colors = [color.pastelize() for color in image_colors]
 
         with patch.object(larry_rgb, "cycle") as mock_cycle:
-            await effect.reset(config)
+            await effect.reset(IMAGE_COLORS, config)
 
         self.assertIs(effect.config, config)
         self.assertEqual(effect.colors, mock_cycle.return_value)
-        mock_cycle.assert_called_once_with(pastel_colors)
+        mock_cycle.assert_called_once_with(
+            [Color(255, 215, 127), Color(255, 229, 127), Color(255, 215, 127)]
+        )
 
     async def test_with_intensity_set(self):
-        config = Config(
-            make_config(
-                input=IMAGE,
-                max_palette_size=3,
-                quality=15,
-                pastelize=False,
-                intensity=0.5,
-            )
-        )
+        config = Config(make_config(max_palette_size=3, pastelize=False, intensity=0.5))
         effect = larry_rgb.Effect()
-        image_colors = colorlib.get_colors(IMAGE, 3, 15)
-        intense_colors = larry_rgb.intensify_colors(image_colors, 0.5)
 
         with patch.object(larry_rgb, "cycle") as mock_cycle:
-            await effect.reset(config)
+            await effect.reset(IMAGE_COLORS, config)
 
-        mock_cycle.assert_called_once_with(intense_colors)
+        mock_cycle.assert_called_once_with(
+            [Color(91, 74, 7), Color(156, 109, 7), Color(224, 150, 0)]
+        )
 
     async def test_reset_with_colors(self):
-        config = Config(make_config(input=IMAGE, colors="#ff0000 #000000"))
+        config = Config(make_config(colors="#ff0000 #000000"))
         effect = larry_rgb.Effect()
 
         with patch.object(larry_rgb, "cycle") as mock_cycle:
-            await effect.reset(config)
+            await effect.reset(IMAGE_COLORS, config)
 
         self.assertEqual(effect.colors, mock_cycle.return_value)
         mock_cycle.assert_called_once_with([Color("#ff0000"), Color("#000000")])
 
     async def test_rgb(self):
-        config = Config(make_config(input=IMAGE, max_palette_size=3, quality=15))
+        config = Config(make_config(max_palette_size=3))
         effect = larry_rgb.Effect()
 
         with patch("larry_rgb.hw.RGB", autospec=True) as mock_rgb:
-            await effect.reset(config)
+            await effect.reset(IMAGE_COLORS, config)
             rgb = effect.rgb
 
         self.assertIs(rgb, mock_rgb.return_value)

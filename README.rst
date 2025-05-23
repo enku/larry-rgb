@@ -34,10 +34,6 @@ Install ``larry-rgb``::
    In addition you can add configuration for the plugin::
 
     [plugins:larry_rgb]
-    # input is the only required configuration. Normally this will be the same as
-    # your larry `input` (or `output`) file
-    input = ~/Pictures/larry
-
     # address[:port] of OpenRGB server
     address = 127.0.0.1:6742
 
@@ -46,10 +42,6 @@ Install ``larry-rgb``::
 
     # Maximum number of colors to get from the input image
     max_palette_size = 10
-
-    # Measure of processing used to get the best palette colors. 1 is the
-    # best/slowest.  Higher numbers are faster but less accurate
-    quality = 10
 
     # Time (in seconds) between color changes when fading
     interval = 0.05

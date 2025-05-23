@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from functools import cache, cached_property
+from functools import cache, cached_property, partial
 from itertools import cycle
 from typing import Awaitable, Callable, Protocol, TypeVar
 
@@ -75,10 +75,10 @@ class Effect:
         async with self.lock:
             self.running = False
 
-    async def reset(self, config: Config) -> None:
+    async def reset(self, colors, config: Config) -> None:
         """Reset the effect's color list"""
-        colors = config.colors or colorlib.get_colors(
-            config.input, config.max_palette_size, config.quality
+        colors = config.colors or Color.dominant(
+            colors, config.max_palette_size, randomize=False
         )
         if config.pastelize:
             colors = [color.pastelize() for color in colors]
@@ -149,11 +149,11 @@ def intensify_colors(colors: ColorList, amount: float):
     ]
 
 
-def plugin(_colors: ColorList, larry_config: ConfigType) -> asyncio.Task:
+def plugin(colors: ColorList, larry_config: ConfigType) -> asyncio.Task:
     """RGB plugin handler"""
     effect = get_effect()
-    func = effect.reset if effect.is_alive() else effect.run
     config = Config(larry_config)
+    func = partial(effect.reset, colors) if effect.is_alive() else effect.run
 
     return asyncio.create_task(func(config))
 
