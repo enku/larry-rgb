@@ -11,7 +11,7 @@ from larry.config import ConfigType
 from larry.image import RasterImage
 
 import larry_rgb
-from larry_rgb import colorlib, hardware
+from larry_rgb import hardware
 from larry_rgb.config import Config
 
 TEST_DIR = Path(__file__).resolve().parent
