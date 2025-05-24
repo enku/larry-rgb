@@ -83,7 +83,7 @@ class Effect:
         if config.pastelize:
             colors = [color.pastelize() for color in colors]
 
-        colors = intensify_colors(colors, config.intensity)
+        colors = [color.intensify(config.intensity) for color in colors]
 
         async with self.lock:
             self.colors = cycle(colors)
@@ -122,31 +122,6 @@ async def set_gradient(
 def get_effect() -> Effect:
     """Return the "global" Effect instance"""
     return Effect()
-
-
-def intensify_colors(colors: ColorList, amount: float):
-    """Return new list of colors with saturation intensified by given amount
-
-    amount is a value between -1 and 1 (inclusive)
-
-    =0 means same intensity (same color)
-    >0 means more intensity (saturation)
-    <0 means less intensity (towards gray)
-    """
-    ensure_range(
-        amount, (-1, 1), f"Intensity amount must be between -1 and 1: {amount}"
-    )
-
-    if amount == 0:
-        # avoid rounding issues
-        return list(colors)
-
-    factor = 1 + amount
-    return [
-        Color.from_hsv((hsv[0], clip(factor * hsv[1]), hsv[2]))
-        for color in colors
-        if (hsv := color.to_hsv())
-    ]
 
 
 def plugin(colors: ColorList, larry_config: ConfigType) -> asyncio.Task:
