@@ -48,5 +48,8 @@ source = ["larry_rgb"]
 max-args = 10
 max-positional-arguments = 10
 
+[tool.pylint.variables]
+init-import = "yes"
+
 [tool.black]
 skip-magic-trailing-comma = true
