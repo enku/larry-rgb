@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import asyncio
-from functools import cache, cached_property, partial
+from functools import cache, cached_property
 from itertools import cycle
 from typing import Awaitable, Callable, Protocol, TypeVar
 
 from larry.color import Color, ColorList
 from larry.config import ConfigType
-from larry.utils import clip
 
 from larry_rgb import colorlib
 from larry_rgb import hardware as hw
