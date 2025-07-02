@@ -151,6 +151,15 @@ class EffectTestCase(IsolatedAsyncioTestCase):
 
         self.assertIs(effect.running, False)
 
+    def test_rgb_when_not_reset(self) -> None:
+        effect = larry_rgb.Effect()
+
+        with self.assertRaises(RuntimeError) as error_context:
+            effect.rgb  # pylint: disable=pointless-statement
+
+        exception = error_context.exception
+        self.assertEqual("Effect has not been (re)set", str(exception))
+
 
 def make_config(**kwargs) -> ConfigType:
     parser = ConfigParser()
