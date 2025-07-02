@@ -41,7 +41,7 @@ requires = ["pdm-pep517>=1.0.0"]
 build-backend = "pdm.pep517.api"
 
 [tool.coverage.run]
-source = ["larry_rgb"]
+source = ["larry_rgb", "tests"]
 
 [tool.pylint.design]
 # Maximum number of arguments for function / method.
