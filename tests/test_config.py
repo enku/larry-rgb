@@ -18,7 +18,7 @@ def make_config(**kwargs: str) -> Config:
 
 
 class ConfigTestCase(TestCase):
-    def test_colors(self):
+    def test_colors(self) -> None:
         colors_str = "#ff0000 #000000"
         config = make_config(colors=colors_str)
 

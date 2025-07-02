@@ -16,14 +16,14 @@ BLUE = Color("blue")
 class GetGradientColors(unittest.TestCase):
     """Tests for the get_gradient_colors() method"""
 
-    def test_with_none(self):
+    def test_with_none(self) -> None:
         colors = cycle([RED, GREEN, BLUE])
         start_color, stop_color = colorlib.get_gradient_colors(colors, None)
 
         self.assertEqual(start_color, RED)
         self.assertEqual(stop_color, GREEN)
 
-    def test_with_prev_stop_color(self):
+    def test_with_prev_stop_color(self) -> None:
         prev_stop_color = Color(45, 23, 212)
         colors = cycle([RED, GREEN, BLUE])
         start_color, stop_color = colorlib.get_gradient_colors(colors, prev_stop_color)

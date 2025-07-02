@@ -31,7 +31,7 @@ def create_mock_openrgb(devices: int, leds=1, zones=1) -> OpenRGBClient:
 
 
 class ColorDeviceTestCAse(unittest.TestCase):
-    def test_sets_color_on_the_device(self):
+    def test_sets_color_on_the_device(self) -> None:
         blue = larry.Color("blue")
         mock_device = mock.Mock(spec=Device)
 
@@ -41,7 +41,7 @@ class ColorDeviceTestCAse(unittest.TestCase):
 
 
 class ColorAllDevicesTestCase(unittest.TestCase):
-    def test_calls_color_device_on_all_devices(self):
+    def test_calls_color_device_on_all_devices(self) -> None:
         red = larry.Color("red")
         mock_client = mock.Mock(spec=OpenRGBClient)
         mock_client.ee_devices = [
@@ -61,14 +61,14 @@ class ColorAllDevicesTestCase(unittest.TestCase):
 class MakeClientTestCase(unittest.TestCase):
     """Tests for the make_client() function"""
 
-    def test_instantiates_client(self, mock_openrgb_client_cls):
+    def test_instantiates_client(self, mock_openrgb_client_cls) -> None:
         client = hw.make_client("polaris.invalid", 1234)
 
         mock_openrgb_client_cls.assert_called_once_with("polaris.invalid", 1234)
 
         self.assertIsInstance(client, OpenRGBClient)
 
-    def test_puts_devices_in_direct_mode(self, mock_openrgb_client_cls):
+    def test_puts_devices_in_direct_mode(self, mock_openrgb_client_cls) -> None:
         mock_openrgb_client_cls.return_value = create_mock_openrgb(3)
 
         client = hw.make_client("polaris.invalid", 1234)
@@ -76,7 +76,7 @@ class MakeClientTestCase(unittest.TestCase):
         for device in client.ee_devices:
             device.set_mode.assert_called_with("Direct")
 
-    def test_resizes_zones(self, mock_openrgb_client_cls):
+    def test_resizes_zones(self, mock_openrgb_client_cls) -> None:
         mock_openrgb_client_cls.return_value = create_mock_openrgb(
             3, leds=[3, 2, 1], zones=[1, 2, 3]
         )
@@ -95,14 +95,14 @@ class MakeClientTestCase(unittest.TestCase):
 class RGBDataclassTestCase(unittest.TestCase):
     """Tests for the RGB dataclass"""
 
-    def test_instantiates_client(self, mock_make_client):
+    def test_instantiates_client(self, mock_make_client) -> None:
         rgb = hw.RGB(address="polaris.invalid")
         mock_client = mock_make_client.return_value
 
         self.assertEqual(rgb.openrgb, mock_client)
         mock_make_client.assert_called_once_with("polaris.invalid", 6742)
 
-    def test_set_color(self, _mock_make_client):
+    def test_set_color(self, _mock_make_client) -> None:
         rgb = hw.RGB(address="polaris.invalid")
         blue = larry.Color("blue")
 

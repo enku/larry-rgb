@@ -28,10 +28,10 @@ BLUE = Color("blue")
 class PluginTestCase(IsolatedAsyncioTestCase):
     """Tests for the plugin method"""
 
-    def setUp(self):
+    def setUp(self) -> None:
         larry_rgb.get_effect.cache_clear()
 
-    async def test_instantiates_and_runs_effect(self):
+    async def test_instantiates_and_runs_effect(self) -> None:
         config = make_config()
 
         with patch.object(larry_rgb.Effect, "run") as mock_run:
@@ -40,7 +40,7 @@ class PluginTestCase(IsolatedAsyncioTestCase):
         larry_rgb.get_effect()
         mock_run.assert_called_once_with([], Config(config))
 
-    async def test_when_running_resets_config(self):
+    async def test_when_running_resets_config(self) -> None:
         config = make_config(interval=500)
         effect = larry_rgb.get_effect()
 
@@ -52,13 +52,13 @@ class PluginTestCase(IsolatedAsyncioTestCase):
 
         mock_reset.assert_called_once_with([], Config(config))
 
-    def test_get_effect_when_effect_not_exists(self):
+    def test_get_effect_when_effect_not_exists(self) -> None:
         with patch.object(larry_rgb, "Effect", autospec=True) as mock_effect_cls:
             larry_rgb.get_effect()
 
         mock_effect_cls.assert_called_once_with()
 
-    def test_get_effect_when_effect_does_exist(self):
+    def test_get_effect_when_effect_does_exist(self) -> None:
         with patch.object(larry_rgb, "Effect", autospec=True) as mock_effect_cls:
             original_effect = larry_rgb.get_effect()
             mock_effect_cls.reset_mock()
@@ -71,7 +71,7 @@ class PluginTestCase(IsolatedAsyncioTestCase):
 class EffectTestCase(IsolatedAsyncioTestCase):
     """Tests for the Effect class"""
 
-    async def test_reset(self):
+    async def test_reset(self) -> None:
         config = Config(make_config(max_palette_size=3))
         effect = larry_rgb.Effect()
 
@@ -84,7 +84,7 @@ class EffectTestCase(IsolatedAsyncioTestCase):
             [Color(156, 125, 57), Color(224, 175, 65), Color(90, 80, 35)]
         )
 
-    async def test_reset_with_pastelize_true(self):
+    async def test_reset_with_pastelize_true(self) -> None:
         config = Config(make_config(max_palette_size=3, pastelize=True))
         effect = larry_rgb.Effect()
 
@@ -97,7 +97,7 @@ class EffectTestCase(IsolatedAsyncioTestCase):
             [Color(255, 215, 127), Color(255, 229, 127), Color(255, 215, 127)]
         )
 
-    async def test_with_intensity_set(self):
+    async def test_with_intensity_set(self) -> None:
         config = Config(make_config(max_palette_size=3, pastelize=False, intensity=0.5))
         effect = larry_rgb.Effect()
 
@@ -108,7 +108,7 @@ class EffectTestCase(IsolatedAsyncioTestCase):
             [Color(91, 74, 7), Color(156, 109, 7), Color(224, 150, 0)]
         )
 
-    async def test_reset_with_colors(self):
+    async def test_reset_with_colors(self) -> None:
         config = Config(make_config(colors="#ff0000 #000000"))
         effect = larry_rgb.Effect()
 
@@ -118,7 +118,7 @@ class EffectTestCase(IsolatedAsyncioTestCase):
         self.assertEqual(effect.colors, mock_cycle.return_value)
         mock_cycle.assert_called_once_with([Color("#ff0000"), Color("#000000")])
 
-    async def test_rgb(self):
+    async def test_rgb(self) -> None:
         config = Config(make_config(max_palette_size=3))
         effect = larry_rgb.Effect()
 
@@ -128,7 +128,7 @@ class EffectTestCase(IsolatedAsyncioTestCase):
 
         self.assertIs(rgb, mock_rgb.return_value)
 
-    async def test_run_calls_reset_with_correct_args(self):
+    async def test_run_calls_reset_with_correct_args(self) -> None:
         config = make_config(colors="#ff0000 #000000")
         effect = larry_rgb.get_effect()
 
@@ -143,7 +143,7 @@ class EffectTestCase(IsolatedAsyncioTestCase):
                     await task
                 effect_reset.assert_called_with([], Config(config))
 
-    async def test_stop(self):
+    async def test_stop(self) -> None:
         effect = larry_rgb.Effect()
         effect.running = True
 
@@ -175,7 +175,7 @@ def make_config(**kwargs) -> ConfigType:
 class SetGradient(IsolatedAsyncioTestCase):
     """Tests for the set_gradient() method"""
 
-    async def test_with_none(self):
+    async def test_with_none(self) -> None:
         mock_rgb = Mock(spec=hardware.RGB)()
         mock_rgb.devices = [Mock(), Mock(), Mock()]
         mock_sleep = AsyncMock()
@@ -213,7 +213,7 @@ class SetGradient(IsolatedAsyncioTestCase):
         self.assertEqual(color, RED)
         self.assertEqual(mock_sleep.call_args_list, calls)
 
-    async def test_with_prev_stop_color(self):
+    async def test_with_prev_stop_color(self) -> None:
         prev_stop_color = Color(45, 23, 212)
         mock_rgb = Mock(spec=hardware.RGB)()
         mock_rgb.devices = [Mock(), Mock(), Mock()]
@@ -240,7 +240,7 @@ class SetGradient(IsolatedAsyncioTestCase):
         self.assertEqual(mock_sleep.call_count, 5)
         mock_sleep.assert_called_with(10.0)
 
-    async def test_with_same_color_does_not_set_again(self):
+    async def test_with_same_color_does_not_set_again(self) -> None:
         color = Color(45, 23, 212)
         mock_rgb = Mock(spec=hardware.RGB)()
         mock_rgb.devices = [Mock(), Mock(), Mock()]
@@ -259,7 +259,7 @@ class SetGradient(IsolatedAsyncioTestCase):
 
 
 class EnsureRangeTests(TestCase):
-    def test(self):
+    def test(self) -> None:
         larry_rgb.ensure_range("l", ("a", "z"))
 
         with self.assertRaises(ValueError) as ctx:
@@ -268,7 +268,7 @@ class EnsureRangeTests(TestCase):
         expected = "Value 'z' is out of range ('a', 'l')"
         self.assertEqual(ctx.exception.args, (expected,))
 
-    def test_with_error_message(self):
+    def test_with_error_message(self) -> None:
         with self.assertRaises(ValueError) as ctx:
             larry_rgb.ensure_range(19, (1, 10), "This is a test")
 
