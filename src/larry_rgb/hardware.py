@@ -23,16 +23,16 @@ def color_device(device: Device, color: Color) -> None:
 
 def make_client(address: str, port: int = OPENRGB_PORT) -> OpenRGBClient:
     """Create and initialize OpenRGBClient"""
-    openrgb = OpenRGBClient(address, port)
+    openrgb_client = OpenRGBClient(address, port)
 
-    for device in openrgb.ee_devices:
+    for device in openrgb_client.ee_devices:
         device.set_mode("Direct")
 
         # Not resizing the zones on OpenRGB 0.8 results in not all rgbs getting set on
         # my system.  See https://github.com/jath03/openrgb-python/discussions/64
         resize_device_zones(device)
 
-    return openrgb
+    return openrgb_client
 
 
 @dataclass(frozen=True)
@@ -41,14 +41,14 @@ class RGB:
 
     address: str = "127.0.0.1"
     port: int = OPENRGB_PORT
-    openrgb: OpenRGBClient = field(init=False)
+    openrgb_client: OpenRGBClient = field(init=False)
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "openrgb", make_client(self.address, self.port))
+        object.__setattr__(self, "openrgb_client", make_client(self.address, self.port))
 
     def set_color(self, color: Color) -> None:
         """Send the given color to openrgb"""
-        color_all_devices(self.openrgb, color)
+        color_all_devices(self.openrgb_client, color)
 
 
 def resize_device_zones(device: Device, size: int | None = None) -> None:

@@ -99,19 +99,19 @@ class RGBDataclassTestCase(unittest.TestCase):
         rgb = hw.RGB(address="polaris.invalid")
         mock_client = mock_make_client.return_value
 
-        self.assertEqual(rgb.openrgb, mock_client)
+        self.assertEqual(rgb.openrgb_client, mock_client)
         mock_make_client.assert_called_once_with("polaris.invalid", 6742)
 
     def test_set_color(self, _mock_make_client) -> None:
         rgb = hw.RGB(address="polaris.invalid")
         blue = larry.Color("blue")
 
-        rgb.openrgb.ee_devices = [mock.Mock(), mock.Mock(), mock.Mock()]
+        rgb.openrgb_client.ee_devices = [mock.Mock(), mock.Mock(), mock.Mock()]
 
         rgb.set_color(blue)
 
         rgb_blue = RGBColor(red=0, green=0, blue=255)
-        for device in rgb.openrgb.ee_devices:
+        for device in rgb.openrgb_client.ee_devices:
             device.set_color.assert_called_once_with(rgb_blue)
 
 
