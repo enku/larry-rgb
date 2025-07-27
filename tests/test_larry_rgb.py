@@ -1,4 +1,4 @@
-# pylint: disable=missing-docstring
+# pylint: disable=missing-docstring,unused-argument
 import asyncio
 from configparser import ConfigParser
 from itertools import cycle
@@ -10,10 +10,13 @@ import numpy as np
 from larry.color import Color
 from larry.config import ConfigType
 from larry.image import RasterImage
+from unittest_fixtures import Fixtures, given
 
 import larry_rgb
 from larry_rgb import hardware
 from larry_rgb.config import Config
+
+from .lib import clear_cache
 
 TEST_DIR = Path(__file__).resolve().parent
 IMAGE = TEST_DIR / "input.jpeg"
@@ -25,13 +28,11 @@ GREEN = Color("green")
 BLUE = Color("blue")
 
 
+@given(clear_cache)
 class PluginTestCase(IsolatedAsyncioTestCase):
     """Tests for the plugin method"""
 
-    def setUp(self) -> None:
-        larry_rgb.get_effect.cache_clear()
-
-    async def test_instantiates_and_runs_effect(self) -> None:
+    async def test_instantiates_and_runs_effect(self, fixtures: Fixtures) -> None:
         config = make_config()
 
         with patch.object(larry_rgb.Effect, "run") as mock_run:
@@ -40,7 +41,7 @@ class PluginTestCase(IsolatedAsyncioTestCase):
         larry_rgb.get_effect()
         mock_run.assert_called_once_with([], Config(config))
 
-    async def test_when_running_resets_config(self) -> None:
+    async def test_when_running_resets_config(self, fixtures: Fixtures) -> None:
         config = make_config(interval=500)
         effect = larry_rgb.get_effect()
 
@@ -52,13 +53,13 @@ class PluginTestCase(IsolatedAsyncioTestCase):
 
         mock_reset.assert_called_once_with([], Config(config))
 
-    def test_get_effect_when_effect_not_exists(self) -> None:
+    def test_get_effect_when_effect_not_exists(self, fixtures: Fixtures) -> None:
         with patch.object(larry_rgb, "Effect", autospec=True) as mock_effect_cls:
             larry_rgb.get_effect()
 
         mock_effect_cls.assert_called_once_with()
 
-    def test_get_effect_when_effect_does_exist(self) -> None:
+    def test_get_effect_when_effect_does_exist(self, fixtures: Fixtures) -> None:
         with patch.object(larry_rgb, "Effect", autospec=True) as mock_effect_cls:
             original_effect = larry_rgb.get_effect()
             mock_effect_cls.reset_mock()
