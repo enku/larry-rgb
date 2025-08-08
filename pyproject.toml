@@ -27,6 +27,7 @@ build-backend = "pdm.pep517.api"
 
 [tool.coverage.run]
 source = ["larry_rgb", "tests"]
+omit = ["tests/__main__.py"]
 
 [tool.pylint.design]
 # Maximum number of arguments for function / method.
