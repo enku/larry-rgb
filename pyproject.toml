@@ -17,6 +17,9 @@ license = {text = "MIT"}
 [project.entry-points."larry.plugins"]
 larry_rgb = "larry_rgb:plugin"
 
+[project.urls]
+homepage = "https://github.com/enku/larry-rgb"
+repository = "https://github.com/enku/larry-rgb"
 
 [build-system]
 requires = ["pdm-pep517>=1.0.0"]
