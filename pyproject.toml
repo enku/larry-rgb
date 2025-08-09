@@ -56,5 +56,5 @@ dev = [
     "pylint>=2.15.5",
     "coverage>=6.5.0",
     "types-Pillow>=9.4.0.2",
-    "unittest-fixtures>=2.0.0",
+    "unittest-fixtures>=2.1.0",
 ]
