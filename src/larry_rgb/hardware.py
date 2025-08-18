@@ -3,9 +3,9 @@
 from dataclasses import dataclass, field
 
 from larry.color import Color
-from openrgb import OpenRGBClient
-from openrgb.orgb import Device
-from openrgb.utils import RGBColor
+from openrgb import OpenRGBClient  # type: ignore
+from openrgb.orgb import Device  # type: ignore
+from openrgb.utils import RGBColor  # type: ignore
 
 OPENRGB_PORT = 6742
 

@@ -1,11 +1,9 @@
 """Set the OpenRGB rbg colors to the dominant color of the image"""
 
-from __future__ import annotations
-
 import asyncio
 from functools import cache, cached_property
 from itertools import cycle
-from typing import Awaitable, Callable, Protocol, TypeVar
+from typing import Any, Awaitable, Callable, Iterator, Protocol, TypeVar
 
 from larry.color import Color, ColorList
 from larry.config import ConfigType
@@ -27,7 +25,7 @@ class Effect:
     def __init__(self) -> None:
         self.config: Config
         self.lock = asyncio.Lock()
-        self.colors: cycle[Color] = cycle([])
+        self.colors: Iterator[Color] = cycle([])
         self.running = False
 
     def is_alive(self) -> bool:
@@ -69,12 +67,12 @@ class Effect:
                 )
         self.running = False
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Queue the effect to stop"""
         async with self.lock:
             self.running = False
 
-    async def reset(self, colors, config: Config) -> None:
+    async def reset(self, colors: ColorList, config: Config) -> None:
         """Reset the effect's color list"""
         colors = config.colors or Color.dominant(
             colors, config.max_palette_size, randomize=False
@@ -91,7 +89,7 @@ class Effect:
 
 async def set_gradient(
     rgb: hw.RGB,
-    colors: cycle[Color],
+    colors: Iterator[Color],
     steps: int,
     pause_after_fade: float,
     interval: float,
@@ -123,7 +121,7 @@ def get_effect() -> Effect:
     return Effect()
 
 
-def plugin(colors: ColorList, larry_config: ConfigType) -> asyncio.Task:
+def plugin(colors: ColorList, larry_config: ConfigType) -> asyncio.Task[Any]:
     """RGB plugin handler"""
     effect = get_effect()
     config = Config(larry_config)

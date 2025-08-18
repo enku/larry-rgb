@@ -1,5 +1,7 @@
 """LarryRGB config"""
 
+from typing import Any
+
 from larry.color import Color
 from larry.config import ConfigType
 
@@ -35,11 +37,11 @@ class Config:
         """Number of seconds to pause between gradients"""
         return self.config.getfloat("pause_after_fade", fallback=0.0)
 
-    def __eq__(self, other) -> bool:
-        other_configtype = getattr(other, "config", None)
+    def __eq__(self, other: Any) -> bool:
+        other_config = getattr(other, "config", None)
 
-        if isinstance(other_configtype, ConfigType):
-            return self.config == other.config
+        if isinstance(other_config, ConfigType):
+            return self.config == other_config
 
         return NotImplemented
 
