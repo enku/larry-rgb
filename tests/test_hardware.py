@@ -6,9 +6,8 @@ from unittest import mock
 
 import larry
 from openrgb import OpenRGBClient
-from openrgb.orgb import Device
 from openrgb.utils import RGBColor
-from unittest_fixtures import FixtureContext, Fixtures, fixture, given
+from unittest_fixtures import FixtureContext, Fixtures, given
 
 from larry_rgb import hardware as hw
 
