@@ -12,6 +12,8 @@ from unittest_fixtures import FixtureContext, Fixtures, fixture, given
 
 from larry_rgb import hardware as hw
 
+from . import lib
+
 
 def make_client_fixture(_: Fixtures) -> FixtureContext[mock.Mock]:
     with mock.patch.object(hw, "make_client", autospec=True) as mocked:
@@ -36,25 +38,23 @@ def create_mock_openrgb(devices: int, leds=1, zones=1) -> OpenRGBClient:
     return mock.Mock(spec=OpenRGBClient, ee_devices=mock_devices)
 
 
+@given(lib.device)
 class ColorDeviceTestCAse(unittest.TestCase):
-    def test_sets_color_on_the_device(self) -> None:
+    def test_sets_color_on_the_device(self, fixtures: Fixtures) -> None:
         blue = larry.Color("blue")
-        mock_device = mock.Mock(spec=Device)
+        device = fixtures.device
 
-        hw.color_device(mock_device, blue)
+        hw.color_device(device, blue)
 
-        mock_device.set_color.assert_called_once_with(RGBColor(0, 0, 255))
+        device.set_color.assert_called_once_with(RGBColor(0, 0, 255))
 
 
+@given(d1=lib.device, d2=lib.device, d3=lib.device)
 class ColorAllDevicesTestCase(unittest.TestCase):
-    def test_calls_color_device_on_all_devices(self) -> None:
+    def test_calls_color_device_on_all_devices(self, fixtures: Fixtures) -> None:
         red = larry.Color("red")
         mock_client = mock.Mock(spec=OpenRGBClient)
-        mock_client.ee_devices = [
-            mock.Mock(spec=Device),
-            mock.Mock(spec=Device),
-            mock.Mock(spec=Device),
-        ]
+        mock_client.ee_devices = [fixtures.d1, fixtures.d2, fixtures.d3]
 
         hw.color_all_devices(mock_client, red)
 
