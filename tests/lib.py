@@ -1,4 +1,5 @@
 """Tests lib"""
+# pylint: disable=missing-docstring
 
 from itertools import cycle
 from typing import Iterable
