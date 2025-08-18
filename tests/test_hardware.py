@@ -1,6 +1,6 @@
 """Tests for larry_rgb.hardware"""
 
-# pylint: disable=missing-docstring
+# pylint: disable=missing-docstring,unused-argument
 import unittest
 from unittest import mock
 
@@ -8,8 +8,14 @@ import larry
 from openrgb import OpenRGBClient
 from openrgb.orgb import Device
 from openrgb.utils import RGBColor
+from unittest_fixtures import FixtureContext, Fixtures, fixture, given
 
 from larry_rgb import hardware as hw
+
+
+def make_client_fixture(_: Fixtures) -> FixtureContext[mock.Mock]:
+    with mock.patch.object(hw, "make_client", autospec=True) as mocked:
+        yield mocked
 
 
 def create_mock_openrgb(devices: int, leds=1, zones=1) -> OpenRGBClient:
@@ -91,18 +97,18 @@ class MakeClientTestCase(unittest.TestCase):
         client.ee_devices[2].zones[2].resize.assert_called_once_with(1)
 
 
-@mock.patch.object(hw, "make_client", autospec=True)
+@given(make_client_fixture)
 class RGBDataclassTestCase(unittest.TestCase):
     """Tests for the RGB dataclass"""
 
-    def test_instantiates_client(self, mock_make_client) -> None:
+    def test_instantiates_client(self, fixtures: Fixtures) -> None:
         rgb = hw.RGB(address="polaris.invalid")
-        mock_client = mock_make_client.return_value
+        mock_client = fixtures.make_client.return_value
 
         self.assertEqual(rgb.openrgb_client, mock_client)
-        mock_make_client.assert_called_once_with("polaris.invalid", 6742)
+        fixtures.make_client.assert_called_once_with("polaris.invalid", 6742)
 
-    def test_set_color(self, _mock_make_client) -> None:
+    def test_set_color(self, fixtures: Fixtures) -> None:
         rgb = hw.RGB(address="polaris.invalid")
         blue = larry.Color("blue")
 
