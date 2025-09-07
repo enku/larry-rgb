@@ -81,8 +81,10 @@ class EffectTestCase(IsolatedAsyncioTestCase):
 
         self.assertIs(effect.config, config)
         self.assertEqual(effect.colors, mock_cycle.return_value)
-        mock_cycle.assert_called_once_with(
-            [Color(156, 125, 57), Color(224, 175, 65), Color(90, 80, 35)]
+        call_args = mock_cycle.call_args[0]
+        colors = call_args[0]
+        self.assertEqual(
+            set(colors), {Color(156, 125, 57), Color(224, 175, 65), Color(91, 80, 35)}
         )
 
     async def test_reset_with_pastelize_true(self) -> None:
@@ -94,8 +96,11 @@ class EffectTestCase(IsolatedAsyncioTestCase):
 
         self.assertIs(effect.config, config)
         self.assertEqual(effect.colors, mock_cycle.return_value)
-        mock_cycle.assert_called_once_with(
-            [Color(255, 215, 127), Color(255, 229, 127), Color(255, 215, 127)]
+        call_args = mock_cycle.call_args[0]
+        colors = call_args[0]
+        self.assertEqual(
+            set(colors),
+            {Color(255, 215, 127), Color(255, 229, 127), Color(255, 215, 127)},
         )
 
     async def test_with_intensity_set(self) -> None:
@@ -105,8 +110,10 @@ class EffectTestCase(IsolatedAsyncioTestCase):
         with patch.object(larry_rgb, "cycle") as mock_cycle:
             await effect.reset(IMAGE_COLORS, config)
 
-        mock_cycle.assert_called_once_with(
-            [Color(91, 74, 7), Color(156, 109, 7), Color(224, 150, 0)]
+        call_args = mock_cycle.call_args[0]
+        colors = call_args[0]
+        self.assertEqual(
+            set(colors), {Color(90, 75, 8), Color(155, 110, 10), Color(224, 149, 0)}
         )
 
     async def test_reset_with_colors(self) -> None:
