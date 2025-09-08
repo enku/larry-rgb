@@ -1,5 +1,6 @@
 # pylint: disable=missing-docstring,unused-argument
 import asyncio
+import datetime as dt
 from configparser import ConfigParser
 from itertools import cycle
 from pathlib import Path
@@ -102,6 +103,24 @@ class EffectTestCase(IsolatedAsyncioTestCase):
         self.assertEqual(
             set(colors),
             {Color(255, 215, 127), Color(255, 229, 127), Color(255, 215, 127)},
+        )
+
+    async def test_reset_with_timeofday_true(self, fixtures: Fixtures) -> None:
+        config = Config(make_config(max_palette_size=3, timeofday=True))
+        effect = larry_rgb.Effect()
+        now = dt.datetime(2025, 9, 7, 21, 54)
+
+        with patch.object(larry_rgb, "cycle") as mock_cycle:
+            with patch("larry.filters.timeofday.now", return_value=now):
+                await effect.reset(IMAGE_COLORS, config)
+
+        self.assertIs(effect.config, config)
+        self.assertEqual(effect.colors, mock_cycle.return_value)
+        call_args = mock_cycle.call_args[0]
+        colors = call_args[0]
+
+        self.assertEqual(
+            set(colors), {Color("#2d2811"), Color("#705720"), Color("#4e3e1c")}
         )
 
     async def test_with_intensity_set(self, fixtures: Fixtures) -> None:

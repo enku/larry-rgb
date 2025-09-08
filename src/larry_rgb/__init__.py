@@ -1,12 +1,14 @@
 """Set the OpenRGB rbg colors to the dominant color of the image"""
 
 import asyncio
+from configparser import ConfigParser
 from functools import cache, cached_property
 from itertools import cycle
 from typing import Any, Awaitable, Callable, Iterator, Protocol, TypeVar
 
 from larry.color import Color, ColorList
 from larry.config import ConfigType
+from larry.filters.timeofday import cfilter as timeofday
 
 from larry_rgb import colorlib
 from larry_rgb import hardware as hw
@@ -79,6 +81,9 @@ class Effect:
         )
         if config.pastelize:
             colors = [color.pastelize() for color in colors]
+
+        if config.timeofday:
+            colors = timeofday(colors, ConfigParser())
 
         colors = [color.intensify(config.intensity) for color in colors]
 

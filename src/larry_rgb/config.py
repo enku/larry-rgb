@@ -54,6 +54,14 @@ class Config:
         return self.config.getboolean("pastelize", False)
 
     @property
+    def timeofday(self) -> bool:
+        """Whether or not to adjust the brightness according to the time of day.
+
+        The default is False.
+        """
+        return self.config.getboolean("timeofday", False)
+
+    @property
     def colors(self) -> list[Color]:
         """colors to use instead of image-generated colors"""
         color_str = self.config.get("colors", fallback="").strip()
