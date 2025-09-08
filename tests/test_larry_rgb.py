@@ -20,7 +20,6 @@ from .lib import clear_cache
 
 TEST_DIR = Path(__file__).resolve().parent
 IMAGE = TEST_DIR / "input.jpeg"
-np.random.seed(1)
 IMAGE_COLORS = list(RasterImage(IMAGE.read_bytes()).colors)
 
 RED = Color("red")
@@ -29,6 +28,7 @@ BLUE = Color("blue")
 
 
 @given(clear_cache)
+@given(np_seed=lambda _: np.random.seed(1))
 class PluginTestCase(IsolatedAsyncioTestCase):
     """Tests for the plugin method"""
 
@@ -69,10 +69,11 @@ class PluginTestCase(IsolatedAsyncioTestCase):
         mock_effect_cls.assert_not_called()
 
 
+@given(np_seed=lambda _: np.random.seed(1))
 class EffectTestCase(IsolatedAsyncioTestCase):
     """Tests for the Effect class"""
 
-    async def test_reset(self) -> None:
+    async def test_reset(self, fixtures: Fixtures) -> None:
         config = Config(make_config(max_palette_size=3))
         effect = larry_rgb.Effect()
 
@@ -87,7 +88,7 @@ class EffectTestCase(IsolatedAsyncioTestCase):
             set(colors), {Color(156, 125, 57), Color(224, 175, 65), Color(91, 80, 35)}
         )
 
-    async def test_reset_with_pastelize_true(self) -> None:
+    async def test_reset_with_pastelize_true(self, fixtures: Fixtures) -> None:
         config = Config(make_config(max_palette_size=3, pastelize=True))
         effect = larry_rgb.Effect()
 
@@ -103,7 +104,7 @@ class EffectTestCase(IsolatedAsyncioTestCase):
             {Color(255, 215, 127), Color(255, 229, 127), Color(255, 215, 127)},
         )
 
-    async def test_with_intensity_set(self) -> None:
+    async def test_with_intensity_set(self, fixtures: Fixtures) -> None:
         config = Config(make_config(max_palette_size=3, pastelize=False, intensity=0.5))
         effect = larry_rgb.Effect()
 
@@ -113,10 +114,10 @@ class EffectTestCase(IsolatedAsyncioTestCase):
         call_args = mock_cycle.call_args[0]
         colors = call_args[0]
         self.assertEqual(
-            set(colors), {Color(90, 75, 8), Color(155, 110, 10), Color(224, 149, 0)}
+            set(colors), {Color(91, 74, 7), Color(224, 150, 0), Color(156, 109, 7)}
         )
 
-    async def test_reset_with_colors(self) -> None:
+    async def test_reset_with_colors(self, fixtures: Fixtures) -> None:
         config = Config(make_config(colors="#ff0000 #000000"))
         effect = larry_rgb.Effect()
 
@@ -126,7 +127,7 @@ class EffectTestCase(IsolatedAsyncioTestCase):
         self.assertEqual(effect.colors, mock_cycle.return_value)
         mock_cycle.assert_called_once_with([Color("#ff0000"), Color("#000000")])
 
-    async def test_rgb(self) -> None:
+    async def test_rgb(self, fixtures: Fixtures) -> None:
         config = Config(make_config(max_palette_size=3))
         effect = larry_rgb.Effect()
 
@@ -136,7 +137,7 @@ class EffectTestCase(IsolatedAsyncioTestCase):
 
         self.assertIs(rgb, mock_rgb.return_value)
 
-    async def test_run_calls_reset_with_correct_args(self) -> None:
+    async def test_run_calls_reset_with_correct_args(self, fixtures: Fixtures) -> None:
         config = make_config(colors="#ff0000 #000000")
         effect = larry_rgb.get_effect()
 
@@ -151,7 +152,7 @@ class EffectTestCase(IsolatedAsyncioTestCase):
                     await task
                 effect_reset.assert_called_with([], Config(config))
 
-    async def test_stop(self) -> None:
+    async def test_stop(self, fixtures: Fixtures) -> None:
         effect = larry_rgb.Effect()
         effect.running = True
 
@@ -159,7 +160,7 @@ class EffectTestCase(IsolatedAsyncioTestCase):
 
         self.assertIs(effect.running, False)
 
-    def test_rgb_when_not_reset(self) -> None:
+    def test_rgb_when_not_reset(self, fixtures: Fixtures) -> None:
         effect = larry_rgb.Effect()
 
         with self.assertRaises(RuntimeError) as error_context:
