@@ -1,5 +1,6 @@
 """LarryRGB config"""
 
+import warnings
 from typing import Any
 
 from larry.color import Color
@@ -51,6 +52,10 @@ class Config:
 
         The default is False.
         """
+        warnings.warn(
+            "The pastelize config is deprecated in favor of plugin filters",
+            DeprecationWarning,
+        )
         return self.config.getboolean("pastelize", False)
 
     @property
@@ -59,6 +64,10 @@ class Config:
 
         The default is False.
         """
+        warnings.warn(
+            "The timeofday config is deprecated in favor of plugin filters",
+            DeprecationWarning,
+        )
         return self.config.getboolean("timeofday", False)
 
     @property
@@ -71,4 +80,8 @@ class Config:
     @property
     def intensity(self) -> float:
         """Amount of intensity to add to the colors (between -1 and 1)"""
+        warnings.warn(
+            "The intensity config is deprecated in favor of plugin filters",
+            DeprecationWarning,
+        )
         return self.config.getfloat("intensity", fallback=0.0)

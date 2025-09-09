@@ -9,6 +9,7 @@ from typing import Any, Awaitable, Callable, Iterator, Protocol, TypeVar
 from larry.color import Color, ColorList
 from larry.config import ConfigType
 from larry.filters.timeofday import cfilter as timeofday
+from larry.plugins import apply_plugin_filter
 
 from larry_rgb import colorlib
 from larry_rgb import hardware as hw
@@ -79,6 +80,9 @@ class Effect:
         colors = config.colors or Color.dominant(
             colors, config.max_palette_size, randomize=False
         )
+
+        # Note: pastelize, timeofday and intensify below are deprecated as we now use
+        # apply_plugin_filter (below). This will eventually be removed.
         if config.pastelize:
             colors = [color.pastelize() for color in colors]
 
@@ -86,6 +90,7 @@ class Effect:
             colors = timeofday(colors, ConfigParser())
 
         colors = [color.intensify(config.intensity) for color in colors]
+        colors = apply_plugin_filter(colors, config.config)
 
         async with self.lock:
             self.colors = cycle(colors)
