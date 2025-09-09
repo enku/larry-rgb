@@ -195,10 +195,10 @@ files = [
 
 [[package]]
 name = "larry"
-version = "0.1.dev387"
+version = "0.1.dev389"
 requires_python = ">=3.11"
 git = "https://github.com/enku/larry.git"
-revision = "02c9299c5582520afbe31ee784d9ceb49285c0a6"
+revision = "2eda22aa11d1f5480008ce70556f1a5022f05c7b"
 summary = "Colorify your desktop with Larry the Cow"
 groups = ["default"]
 dependencies = [
