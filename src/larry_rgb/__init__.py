@@ -77,9 +77,7 @@ class Effect:
 
     async def reset(self, colors: ColorList, config: Config) -> None:
         """Reset the effect's color list"""
-        colors = config.colors or Color.dominant(
-            colors, config.max_palette_size, randomize=False
-        )
+        colors = config.colors or Color.dominant(colors, config.max_palette_size)
 
         # Note: pastelize, timeofday and intensify below are deprecated as we now use
         # apply_plugin_filter (below). This will eventually be removed.
