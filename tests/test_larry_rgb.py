@@ -43,7 +43,7 @@ class PluginTestCase(IsolatedAsyncioTestCase):
         mock_run.assert_called_once_with([], Config(config))
 
     async def test_when_running_resets_config(self, fixtures: Fixtures) -> None:
-        config = make_config(interval=500)
+        config = make_config(interval="500")
         effect = larry_rgb.get_effect()
 
         # Mock running state
@@ -75,7 +75,7 @@ class EffectTestCase(IsolatedAsyncioTestCase):
     """Tests for the Effect class"""
 
     async def test_reset(self, fixtures: Fixtures) -> None:
-        config = Config(make_config(max_palette_size=3))
+        config = Config(make_config(max_palette_size="3"))
         effect = larry_rgb.Effect()
 
         with patch.object(larry_rgb, "cycle") as mock_cycle:
@@ -90,7 +90,7 @@ class EffectTestCase(IsolatedAsyncioTestCase):
         )
 
     async def test_reset_with_pastelize_true(self, fixtures: Fixtures) -> None:
-        config = Config(make_config(max_palette_size=3, pastelize=True))
+        config = Config(make_config(max_palette_size="3", pastelize="true"))
         effect = larry_rgb.Effect()
 
         with patch.object(larry_rgb, "cycle") as mock_cycle:
@@ -106,7 +106,7 @@ class EffectTestCase(IsolatedAsyncioTestCase):
         )
 
     async def test_reset_with_timeofday_true(self, fixtures: Fixtures) -> None:
-        config = Config(make_config(max_palette_size=3, timeofday=True))
+        config = Config(make_config(max_palette_size="3", timeofday="true"))
         effect = larry_rgb.Effect()
         now = dt.datetime(2025, 9, 7, 21, 54)
 
@@ -124,7 +124,9 @@ class EffectTestCase(IsolatedAsyncioTestCase):
         )
 
     async def test_with_intensity_set(self, fixtures: Fixtures) -> None:
-        config = Config(make_config(max_palette_size=3, pastelize=False, intensity=0.5))
+        config = Config(
+            make_config(max_palette_size="3", pastelize="false", intensity="0.5")
+        )
         effect = larry_rgb.Effect()
 
         with patch.object(larry_rgb, "cycle") as mock_cycle:
@@ -147,7 +149,7 @@ class EffectTestCase(IsolatedAsyncioTestCase):
         mock_cycle.assert_called_once_with([Color("#ff0000"), Color("#000000")])
 
     async def test_rgb(self, fixtures: Fixtures) -> None:
-        config = Config(make_config(max_palette_size=3))
+        config = Config(make_config(max_palette_size="3"))
         effect = larry_rgb.Effect()
 
         with patch("larry_rgb.hw.RGB", autospec=True) as mock_rgb:
@@ -189,13 +191,12 @@ class EffectTestCase(IsolatedAsyncioTestCase):
         self.assertEqual("Effect has not been (re)set", str(exception))
 
 
-def make_config(**kwargs) -> ConfigType:
+def make_config(**kwargs: str) -> ConfigType:
     parser = ConfigParser()
     parser.add_section("rgb")
     config = ConfigType(parser, "rgb")
 
-    for name, value in kwargs.items():
-        config[name] = str(value)
+    config.update(kwargs)
 
     return config
 
