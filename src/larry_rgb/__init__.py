@@ -4,7 +4,7 @@ import asyncio
 from configparser import ConfigParser
 from functools import cache, cached_property
 from itertools import cycle
-from typing import Any, Awaitable, Callable, Iterator, Protocol, TypeVar
+from typing import Awaitable, Callable, Iterator, Protocol, TypeVar
 
 from larry.color import Color, ColorList
 from larry.config import ConfigType
