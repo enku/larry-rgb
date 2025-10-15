@@ -129,13 +129,13 @@ def get_effect() -> Effect:
     return Effect()
 
 
-async def plugin(colors: ColorList, larry_config: ConfigType) -> asyncio.Task[Any]:
+async def plugin(colors: ColorList, larry_config: ConfigType) -> None:
     """RGB plugin handler"""
     effect = get_effect()
     config = Config(larry_config)
     func = effect.reset if effect.is_alive() else effect.run
 
-    return asyncio.create_task(func(colors, config))
+    await func(colors, config)
 
 
 _T = TypeVar("_T", bound=Comparable)

@@ -164,7 +164,7 @@ class EffectTestCase(IsolatedAsyncioTestCase):
 
         with patch.object(effect, "reset", wraps=effect.reset) as effect_reset:
             with patch.object(larry_rgb.Effect, "rgb"):
-                task = larry_rgb.plugin([], config)
+                task = asyncio.create_task(larry_rgb.plugin([], config))
                 try:
                     pass
                 finally:
