@@ -2,8 +2,10 @@
 from configparser import ConfigParser
 from unittest import TestCase
 
-from larry_rgb import Color
-from larry_rgb.config import Config, ConfigType
+from larry.color import Color
+from larry.config import ConfigType
+
+from larry_rgb.config import Config
 
 
 def make_config(**kwargs: str) -> Config:
