@@ -19,7 +19,9 @@ def make_client_fixture(_: Fixtures) -> FixtureContext[mock.Mock]:
         yield mocked
 
 
-def create_mock_openrgb(devices: int, leds=1, zones=1) -> OpenRGBClient:
+def create_mock_openrgb(
+    devices: int, leds: int | list[int] = 1, zones: int | list[int] = 1
+) -> OpenRGBClient:
     mock_devices = []
     for i in range(devices):
         if isinstance(leds, int):
@@ -66,14 +68,16 @@ class ColorAllDevicesTestCase(unittest.TestCase):
 class MakeClientTestCase(unittest.TestCase):
     """Tests for the make_client() function"""
 
-    def test_instantiates_client(self, mock_openrgb_client_cls) -> None:
+    def test_instantiates_client(self, mock_openrgb_client_cls: mock.Mock) -> None:
         client = hw.make_client("polaris.invalid", 1234)
 
         mock_openrgb_client_cls.assert_called_once_with("polaris.invalid", 1234)
 
         self.assertIsInstance(client, OpenRGBClient)
 
-    def test_puts_devices_in_direct_mode(self, mock_openrgb_client_cls) -> None:
+    def test_puts_devices_in_direct_mode(
+        self, mock_openrgb_client_cls: mock.Mock
+    ) -> None:
         mock_openrgb_client_cls.return_value = create_mock_openrgb(3)
 
         client = hw.make_client("polaris.invalid", 1234)
@@ -81,7 +85,7 @@ class MakeClientTestCase(unittest.TestCase):
         for device in client.ee_devices:
             device.set_mode.assert_called_with("Direct")
 
-    def test_resizes_zones(self, mock_openrgb_client_cls) -> None:
+    def test_resizes_zones(self, mock_openrgb_client_cls: mock.Mock) -> None:
         mock_openrgb_client_cls.return_value = create_mock_openrgb(
             3, leds=[3, 2, 1], zones=[1, 2, 3]
         )
