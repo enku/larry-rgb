@@ -132,10 +132,9 @@ def get_effect() -> Effect:
 async def plugin(colors: ColorList, larry_config: ConfigType) -> None:
     """RGB plugin handler"""
     effect = get_effect()
-    config = Config(larry_config)
     func = effect.reset if effect.is_alive() else effect.run
 
-    await func(colors, config)
+    await func(colors, Config(larry_config))
 
 
 _T = TypeVar("_T", bound=Comparable)
