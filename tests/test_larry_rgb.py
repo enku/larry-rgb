@@ -7,7 +7,6 @@ from pathlib import Path
 from unittest import IsolatedAsyncioTestCase, TestCase
 from unittest.mock import AsyncMock, Mock, call, patch
 
-import numpy as np
 from larry.color import Color
 from larry.config import ConfigType
 from larry.image import RasterImage
@@ -17,7 +16,7 @@ import larry_rgb
 from larry_rgb import hardware
 from larry_rgb.config import Config
 
-from .lib import clear_cache
+from .lib import clear_cache, np_random_seed
 
 TEST_DIR = Path(__file__).resolve().parent
 IMAGE = TEST_DIR / "input.jpeg"
@@ -28,8 +27,7 @@ GREEN = Color("green")
 BLUE = Color("blue")
 
 
-@given(clear_cache)
-@given(np_seed=lambda _: np.random.seed(1))
+@given(clear_cache, np_random_seed)
 class PluginTestCase(IsolatedAsyncioTestCase):
     """Tests for the plugin method"""
 
@@ -70,7 +68,7 @@ class PluginTestCase(IsolatedAsyncioTestCase):
         mock_effect_cls.assert_not_called()
 
 
-@given(np_seed=lambda _: np.random.seed(1))
+@given(np_random_seed)
 class EffectTestCase(IsolatedAsyncioTestCase):
     """Tests for the Effect class"""
 

@@ -1,11 +1,12 @@
 """Tests lib"""
 
-# pylint: disable=missing-docstring
+# pylint: disable=missing-docstring,redefined-outer-name
 
 from itertools import cycle
 from typing import Iterable
 from unittest import mock
 
+import numpy as np
 from larry import Color
 from openrgb.orgb import Device
 from unittest_fixtures import Fixtures, fixture
@@ -38,3 +39,9 @@ def device(_: Fixtures, leds: int = 1, zones: int = 1) -> mock.Mock:
         leds=[mock.Mock() for _ in range(leds)],
         zones=[mock.Mock() for _ in range(zones)],
     )
+
+
+@fixture()
+def np_random_seed(_: Fixtures, np_random_seed: int = 1) -> None:
+    """Seed numpy's RNG"""
+    np.random.seed(np_random_seed)
