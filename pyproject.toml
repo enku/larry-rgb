@@ -19,6 +19,7 @@ larry_rgb = "larry_rgb:plugin"
 
 [project.entry-points."larry_rgb.effects"]
 colorfade = "larry_rgb.effects.colorfade:Effect"
+dummy = "larry_rgb.effects.dummy:Effect"
 
 [project.urls]
 homepage = "https://github.com/enku/larry-rgb"
