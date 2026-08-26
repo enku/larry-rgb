@@ -85,3 +85,8 @@ class Config:
             DeprecationWarning,
         )
         return self.config.getfloat("intensity", fallback=0.0)
+
+    @property
+    def effect(self) -> str:
+        """The RGB Effect to run"""
+        return self.config.get("effect", fallback="colorfade").strip()

@@ -21,12 +21,12 @@ class PluginTestCase(IsolatedAsyncioTestCase):
         with patch.object(colorfade.Effect, "run") as mock_run:
             await larry_rgb.plugin([], config)
 
-        larry_rgb.get_effect()
+        larry_rgb.get_effect("colorfade")
         mock_run.assert_called_once_with([], Config(config))
 
     async def test_when_running_resets_config(self, fixtures: Fixtures) -> None:
         config = make_config(interval="500")
-        effect = larry_rgb.get_effect()
+        effect = larry_rgb.get_effect("colorfade")
 
         # Mock running state
         with patch.object(effect, "is_alive", return_value=True):
@@ -37,15 +37,15 @@ class PluginTestCase(IsolatedAsyncioTestCase):
 
     def test_get_effect_when_effect_not_exists(self, fixtures: Fixtures) -> None:
         with patch.object(colorfade, "Effect", autospec=True) as mock_effect_cls:
-            larry_rgb.get_effect()
+            larry_rgb.get_effect("colorfade")
 
         mock_effect_cls.assert_called_once_with()
 
     def test_get_effect_when_effect_does_exist(self, fixtures: Fixtures) -> None:
         with patch.object(larry_rgb, "Effect", autospec=True) as mock_effect_cls:
-            original_effect = larry_rgb.get_effect()
+            original_effect = larry_rgb.get_effect("colorfade")
             mock_effect_cls.reset_mock()
-            effect = larry_rgb.get_effect()
+            effect = larry_rgb.get_effect("colorfade")
 
         self.assertIs(effect, original_effect)
         mock_effect_cls.assert_not_called()
