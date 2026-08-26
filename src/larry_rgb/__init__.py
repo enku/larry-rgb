@@ -2,25 +2,19 @@
 
 from functools import cache
 from importlib.metadata import entry_points
-from typing import Any, Protocol, TypeVar
+from typing import Protocol, TypeVar
 
 from larry.color import ColorList
 from larry.config import ConfigType
 
 from larry_rgb.config import Config
+from larry_rgb.effects import Effect
 
 
 class Comparable(Protocol):  # pylint: disable=too-few-public-methods
     """Something that supports <="""
 
     def __le__(self, other: "Comparable") -> bool: ...
-
-
-class Effect(Protocol):
-    # pylint: disable=missing-docstring
-    async def reset(self, colors: ColorList, config: Config) -> Any: ...
-    def is_alive(self) -> bool: ...
-    async def run(self, colors: ColorList, config: Config) -> Any: ...
 
 
 @cache
