@@ -2,20 +2,38 @@
 
 # pylint: disable=missing-docstring,redefined-outer-name
 
+from configparser import ConfigParser
 from itertools import cycle
+from pathlib import Path
 from typing import Iterable
 from unittest import mock
 
 import numpy as np
 from larry import Color
+from larry.config import ConfigType
+from larry.image import RasterImage
 from openrgb.orgb import Device
 from unittest_fixtures import Fixtures, fixture
 
 import larry_rgb
 
+TEST_DIR = Path(__file__).resolve().parent
+IMAGE = TEST_DIR / "input.jpeg"
+IMAGE_COLORS = list(RasterImage(IMAGE.read_bytes()).colors)
+
 RED = Color("red")
 GREEN = Color("green")
 BLUE = Color("blue")
+
+
+def make_config(**kwargs: str) -> ConfigType:
+    parser = ConfigParser()
+    parser.add_section("rgb")
+    config = ConfigType(parser, "rgb")
+
+    config.update(kwargs)
+
+    return config
 
 
 @fixture()
