@@ -6,7 +6,7 @@ from unittest_fixtures import Fixtures, given
 
 import larry_rgb
 from larry_rgb.config import Config
-from larry_rgb.effects import dummy
+from larry_rgb.effects import get_effect
 
 from .lib import clear_cache, make_config, np_random_seed
 
@@ -17,38 +17,23 @@ class PluginTestCase(IsolatedAsyncioTestCase):
 
     async def test_instantiates_and_runs_effect(self, fixtures: Fixtures) -> None:
         config = make_config(effect="dummy")
+        effect = get_effect("dummy")
 
-        with patch.object(dummy.Effect, "run") as mock_run:
+        with patch.object(effect, "run") as mock_run:
             await larry_rgb.plugin([], config)
 
-        larry_rgb.get_effect("dummy")
         mock_run.assert_called_once_with([], Config(config))
 
     async def test_when_running_resets_config(self, fixtures: Fixtures) -> None:
         config = make_config(effect="dummy", interval="500")
-        effect = larry_rgb.get_effect("dummy")
+        effect = get_effect("dummy")
 
         # Mock running state
         with patch.object(effect, "is_alive", return_value=True):
-            with patch.object(dummy.Effect, "reset") as mock_reset:
+            with patch.object(effect, "reset") as mock_reset:
                 await larry_rgb.plugin([], config)
 
         mock_reset.assert_called_once_with([], Config(config))
-
-    def test_get_effect_when_effect_not_exists(self, fixtures: Fixtures) -> None:
-        with patch.object(dummy, "Effect", autospec=True) as mock_effect_cls:
-            larry_rgb.get_effect("dummy")
-
-        mock_effect_cls.assert_called_once_with()
-
-    def test_get_effect_when_effect_does_exist(self, fixtures: Fixtures) -> None:
-        with patch.object(dummy, "Effect", autospec=True) as mock_effect_cls:
-            original_effect = larry_rgb.get_effect("dummy")
-            mock_effect_cls.reset_mock()
-            effect = larry_rgb.get_effect("dummy")
-
-        self.assertIs(effect, original_effect)
-        mock_effect_cls.assert_not_called()
 
 
 class EnsureRangeTests(TestCase):

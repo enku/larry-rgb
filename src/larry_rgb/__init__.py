@@ -1,33 +1,18 @@
 """Set the OpenRGB rbg colors to the dominant color of the image"""
 
-from functools import cache
-from importlib.metadata import entry_points
 from typing import Protocol, TypeVar
 
 from larry.color import ColorList
 from larry.config import ConfigType
 
 from larry_rgb.config import Config
-from larry_rgb.effects import Effect
+from larry_rgb.effects import get_effect
 
 
 class Comparable(Protocol):  # pylint: disable=too-few-public-methods
     """Something that supports <="""
 
     def __le__(self, other: "Comparable") -> bool: ...
-
-
-@cache
-def get_effect(name: str) -> Effect:
-    """Return the "global" Effect instance"""
-    effects = entry_points().select(group="larry_rgb.effects", name=name)
-
-    if not effects:
-        raise LookupError(name)
-
-    effect: type[Effect] = tuple(effects)[0].load()
-
-    return effect()
 
 
 async def plugin(colors: ColorList, larry_config: ConfigType) -> None:

@@ -15,7 +15,7 @@ from larry.image import RasterImage
 from openrgb.orgb import Device
 from unittest_fixtures import Fixtures, fixture
 
-import larry_rgb
+from larry_rgb import effects
 
 TEST_DIR = Path(__file__).resolve().parent
 IMAGE = TEST_DIR / "input.jpeg"
@@ -39,7 +39,7 @@ def make_config(**kwargs: str) -> ConfigType:
 @fixture()
 def clear_cache(_: Fixtures) -> None:
     """Clear the get_effect cache"""
-    larry_rgb.get_effect.cache_clear()
+    effects.get_effect.cache_clear()
 
 
 @fixture()
