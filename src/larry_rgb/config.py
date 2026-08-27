@@ -1,10 +1,39 @@
 """LarryRGB config"""
 
 import warnings
+from types import SimpleNamespace
 from typing import Any
 
 from larry.color import Color
 from larry.config import ConfigType
+
+
+class EffectConfig(SimpleNamespace):  # pylint: disable=too-few-public-methods
+    """Configuration for a specific Effect
+
+    Effects can have their own configuration, set up in larry.cfg like the following:
+
+        [larry]
+        plugins = larry_rgb
+
+        [plugins:larry_rgb]
+        effect = dummy
+        effect.dummy.filter = neonize
+        effect.dummy.filter.neonize.brightness = 50
+        effect.gradient.filter = error
+        effect.dummy.filter.gradient.brightness = 100
+    """
+
+
+class EffectInfo:  # pylint: disable=too-few-public-methods
+    """Information about an Effect
+
+    Includes the effect's name and configuration.
+    """
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+        self.config = EffectConfig()
 
 
 class Config:
@@ -87,6 +116,13 @@ class Config:
         return self.config.getfloat("intensity", fallback=0.0)
 
     @property
-    def effect(self) -> str:
+    def effect(self) -> EffectInfo:
         """The RGB Effect to run"""
-        return self.config.get("effect", fallback="colorfade").strip()
+        info = EffectInfo(self.config.get("effect", fallback="colorfade").strip())
+
+        prefix = f"effect.{info.name}."
+        for key, value in self.config.items():
+            if key.startswith(prefix):
+                setattr(info.config, key.removeprefix(prefix), value)
+
+        return info

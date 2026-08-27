@@ -12,13 +12,21 @@ from larry_rgb.config import Config
 
 class Effect:
     def __init__(self) -> None:
+        self.config: Config
+        self.colors: ColorList
         self.running = False
 
-    async def reset(self, _colors: ColorList, _config: Config) -> None: ...
+    async def reset(self, colors: ColorList, config: Config) -> None:
+        self.colors = colors
+        self.config = config
+
     def is_alive(self) -> bool:
         return self.running
 
-    async def run(self, _colors: ColorList, _config: Config) -> None:
+    async def run(self, colors: ColorList, config: Config) -> None:
+        self.colors = colors
+        self.config = config
+
         self.running = True
 
     async def stop(self) -> None:

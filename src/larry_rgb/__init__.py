@@ -18,7 +18,7 @@ class Comparable(Protocol):  # pylint: disable=too-few-public-methods
 async def plugin(colors: ColorList, larry_config: ConfigType) -> None:
     """RGB plugin handler"""
     config = Config(larry_config)
-    effect = get_effect(config.effect)
+    effect = get_effect(config.effect.name)
 
     if current_effect := current.get():
         if current_effect != effect:

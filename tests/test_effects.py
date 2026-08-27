@@ -1,9 +1,11 @@
 # pylint: disable=missing-docstring,unused-argument
-from unittest import TestCase
+import configparser as cp
+from unittest import IsolatedAsyncioTestCase, TestCase
 from unittest.mock import patch
 
 from unittest_fixtures import Fixtures, given
 
+from larry_rgb import plugin
 from larry_rgb.effects import get_effect
 
 from .lib import clear_cache
@@ -26,3 +28,32 @@ class GetEffectTests(TestCase):
 
         self.assertIs(effect, original_effect)
         mock_effect_cls.assert_not_called()
+
+
+@given(clear_cache)
+class EffectSpecificSettingsTests(IsolatedAsyncioTestCase):
+    larry_config = cp.ConfigParser()
+    larry_config.read_string("""
+[larry]
+plugins = larry_rgb
+
+[plugins:larry_rgb]
+effect = dummy
+effect.dummy.filter = neonize
+effect.dummy.filter.neonize.brightness = 50
+effect.gradient.filter = error
+effect.dummy.filter.gradient.brightness = 100
+""")
+    plugin_config = larry_config["plugins:larry_rgb"]
+
+    async def test(self, fixtures: Fixtures) -> None:
+        await plugin([], self.plugin_config)
+
+        effect = get_effect("dummy")
+        config = effect.config  # type: ignore[attr-defined]
+
+        self.assertEqual(config.effect.name, "dummy")
+        self.assertEqual(config.effect.config.filter, "neonize")
+        self.assertEqual(
+            getattr(config.effect.config, "filter.neonize.brightness"), "50"
+        )
