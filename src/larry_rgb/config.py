@@ -31,9 +31,9 @@ class EffectInfo:  # pylint: disable=too-few-public-methods
     Includes the effect's name and configuration.
     """
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, config: EffectConfig) -> None:
         self.name = name
-        self.config = EffectConfig()
+        self.config = config
 
 
 class Config:
@@ -118,11 +118,16 @@ class Config:
     @property
     def effect(self) -> EffectInfo:
         """The RGB Effect to run"""
-        info = EffectInfo(self.config.get("effect", fallback="colorfade").strip())
+        name = self.config.get("effect", fallback="colorfade").strip()
+        prefix = f"effect.{name}."
 
-        prefix = f"effect.{info.name}."
-        for key, value in self.config.items():
-            if key.startswith(prefix):
-                setattr(info.config, key.removeprefix(prefix), value)
-
-        return info
+        return EffectInfo(
+            name,
+            config=EffectConfig(
+                **{
+                    key.removeprefix(prefix): value
+                    for key, value in self.config.items()
+                    if key.startswith(prefix)
+                }
+            ),
+        )
