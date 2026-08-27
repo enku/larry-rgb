@@ -21,10 +21,13 @@ class Effect:
     async def reset(self, colors: ColorList, config: Config) -> None:
         """Reset the effect"""
         self.config = config
-        dominant = Color.dominant(colors, 10)
+        effect_config = config.effect.config
+        dominant_colors = Color.dominant(
+            colors, int(getattr(effect_config, "dominant_color_count", "10"))
+        )
 
         for device in self.rgb.openrgb_client.ee_devices:
-            self.color_device(device, dominant)
+            self.color_device(device, dominant_colors)
 
     def is_alive(self) -> bool:
         """Return True if the effect is running"""

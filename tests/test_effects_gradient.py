@@ -36,6 +36,20 @@ class GradientEffectTests(IsolatedAsyncioTestCase):
 
         self.assertEqual(color_device.call_count, 3)
 
+    async def test_reset_color_count_from_config(self) -> None:
+        effect = gradient.Effect()
+        config = Config(
+            make_config(
+                **{"effect": "gradient", "effect.gradient.dominant_color_count": "4"}
+            )
+        )
+
+        with patch("larry_rgb.effects.gradient.hw.RGB", autospec=True):
+            with patch("larry_rgb.effects.gradient.Color.dominant") as dominant:
+                await effect.reset([], config)
+
+        dominant.assert_called_once_with([], 4)
+
     async def test_run(self) -> None:
         effect = gradient.Effect()
         config = Config(make_config())
