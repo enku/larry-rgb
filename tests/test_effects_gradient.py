@@ -36,17 +36,18 @@ class GradientEffectTests(IsolatedAsyncioTestCase):
 
         self.assertEqual(color_device.call_count, 3)
 
-    def test_is_alive_always_true(self) -> None:
-        effect = gradient.Effect()
-
-        self.assertTrue(effect.is_alive())
-
     async def test_run(self) -> None:
-        # Just test that it exists
         effect = gradient.Effect()
         config = Config(make_config())
 
-        await effect.run(IMAGE_COLORS, config)
+        with patch.object(effect, "reset", autospec=True) as reset:
+            await effect.run([], config)
+
+        self.assertTrue(effect.running)
+        reset.assert_called_once_with([], config)
+
+        await effect.stop()
+        self.assertFalse(effect.running)
 
     async def test_rgb_property(self) -> None:
         effect = gradient.Effect()

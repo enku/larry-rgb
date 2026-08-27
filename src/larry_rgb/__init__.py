@@ -6,7 +6,7 @@ from larry.color import ColorList
 from larry.config import ConfigType
 
 from larry_rgb.config import Config
-from larry_rgb.effects import get_effect
+from larry_rgb.effects import current, get_effect
 
 
 class Comparable(Protocol):  # pylint: disable=too-few-public-methods
@@ -19,6 +19,12 @@ async def plugin(colors: ColorList, larry_config: ConfigType) -> None:
     """RGB plugin handler"""
     config = Config(larry_config)
     effect = get_effect(config.effect)
+
+    if current_effect := current.get():
+        if current_effect != effect:
+            await current_effect.stop()
+            current.set(effect)
+
     func = effect.reset if effect.is_alive() else effect.run
 
     await func(colors, config)

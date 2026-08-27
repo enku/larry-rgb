@@ -18,5 +18,8 @@ class Effect:
     def is_alive(self) -> bool:
         return self.running
 
-    async def run(self, colors: ColorList, config: Config) -> None:
-        pass
+    async def run(self, _colors: ColorList, _config: Config) -> None:
+        self.running = True
+
+    async def stop(self) -> None:
+        self.running = False

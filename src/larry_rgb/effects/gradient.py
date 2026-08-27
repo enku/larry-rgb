@@ -16,6 +16,7 @@ class Effect:
 
     def __init__(self) -> None:
         self.config: Config
+        self.running = False
 
     async def reset(self, colors: ColorList, config: Config) -> None:
         """Reset the effect"""
@@ -27,10 +28,16 @@ class Effect:
 
     def is_alive(self) -> bool:
         """Return True if the effect is running"""
-        return True
+        return self.running
 
     async def run(self, colors: ColorList, config: Config) -> None:
-        """Nothing to do here"""
+        """Just does a reset"""
+        self.running = True
+        await self.reset(colors, config)
+
+    async def stop(self) -> None:
+        """Stop the Effect"""
+        self.running = False
 
     @cached_property
     def rgb(self) -> hw.RGB:
