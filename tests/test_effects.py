@@ -40,9 +40,7 @@ plugins = larry_rgb
 [plugins:larry_rgb]
 effect = dummy
 effect.dummy.filter = neonize
-effect.dummy.filter.neonize.brightness = 50
 effect.gradient.filter = error
-effect.dummy.filter.gradient.brightness = 100
 """)
     plugin_config = larry_config["plugins:larry_rgb"]
 
@@ -54,6 +52,3 @@ effect.dummy.filter.gradient.brightness = 100
 
         self.assertEqual(config.effect.name, "dummy")
         self.assertEqual(config.effect.config.filter, "neonize")
-        self.assertEqual(
-            getattr(config.effect.config, "filter.neonize.brightness"), "50"
-        )

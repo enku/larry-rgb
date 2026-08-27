@@ -19,9 +19,7 @@ class EffectConfig(SimpleNamespace):  # pylint: disable=too-few-public-methods
         [plugins:larry_rgb]
         effect = dummy
         effect.dummy.filter = neonize
-        effect.dummy.filter.neonize.brightness = 50
         effect.gradient.filter = error
-        effect.dummy.filter.gradient.brightness = 100
     """
 
 
