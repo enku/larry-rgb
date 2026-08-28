@@ -23,7 +23,7 @@ class Effect:
         self.config = config
         effect_config = config.effect.config
         dominant_colors = Color.dominant(
-            colors, int(getattr(effect_config, "dominant_color_count", "10"))
+            colors, int(effect_config.get("dominant_color_count", "10"))
         )
 
         for device in self.rgb.openrgb_client.ee_devices:

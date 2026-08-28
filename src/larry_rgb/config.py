@@ -2,26 +2,10 @@
 
 import warnings
 from copy import copy
-from types import SimpleNamespace
 from typing import Any, Self
 
 from larry.color import Color
 from larry.config import ConfigType
-
-
-class EffectConfig(SimpleNamespace):  # pylint: disable=too-few-public-methods
-    """Configuration for a specific Effect
-
-    Effects can have their own configuration, set up in larry.cfg like the following:
-
-        [larry]
-        plugins = larry_rgb
-
-        [plugins:larry_rgb]
-        effect = dummy
-        effect.dummy.filter = neonize
-        effect.gradient.filter = error
-    """
 
 
 class EffectInfo:  # pylint: disable=too-few-public-methods
@@ -30,7 +14,7 @@ class EffectInfo:  # pylint: disable=too-few-public-methods
     Includes the effect's name and configuration.
     """
 
-    def __init__(self, name: str, config: EffectConfig) -> None:
+    def __init__(self, name: str, config: dict[str, str]) -> None:
         self.name = name
         self.config = config
 
@@ -130,11 +114,9 @@ class Config:
 
         return EffectInfo(
             name,
-            config=EffectConfig(
-                **{
-                    key.removeprefix(prefix): value
-                    for key, value in self.config.items()
-                    if key.startswith(prefix)
-                }
-            ),
+            config={
+                key.removeprefix(prefix): value
+                for key, value in self.config.items()
+                if key.startswith(prefix)
+            },
         )
