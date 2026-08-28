@@ -45,3 +45,21 @@ class ConfigTestCase(TestCase):
         config = make_config()
 
         self.assertFalse(6 == config)
+
+    def test_for_effect(self) -> None:
+        orig_config = make_config(
+            **{
+                "effect": "random",
+                "effect.random.filter": "foo",
+                "effect.gradient.filter": "bar",
+                "effect.colorfade.filter": "baz",
+            }
+        )
+
+        self.assertEqual(orig_config.effect.name, "random")
+        self.assertEqual(orig_config.effect.config.filter, "foo")
+
+        new_config = Config.for_effect("gradient", orig_config)
+
+        self.assertEqual(new_config.effect.name, "gradient")
+        self.assertEqual(new_config.effect.config.filter, "bar")

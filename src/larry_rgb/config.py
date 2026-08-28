@@ -1,8 +1,9 @@
 """LarryRGB config"""
 
 import warnings
+from copy import copy
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, Self
 
 from larry.color import Color
 from larry.config import ConfigType
@@ -39,6 +40,14 @@ class Config:
 
     def __init__(self, config: ConfigType):
         self.config = config
+
+    @classmethod
+    def for_effect(cls, effect_name: str, config: Config) -> Self:
+        """Use the given Config to create a Config for the given effect"""
+        larry_config = copy(config.config)
+        larry_config["effect"] = effect_name
+
+        return cls(larry_config)
 
     @property
     def address(self) -> str:
