@@ -6,13 +6,14 @@ import logging
 from larry.color import Color, ColorList
 from larry.plugins import apply_plugin_filter
 
+from larry_rgb import effects
 from larry_rgb import hardware as hw
 from larry_rgb.config import Config
 
 logger = logging.getLogger(__package__)
 
 
-class Effect:
+class Effect(effects.Effect):
     """Solid color Effect"""
 
     def __init__(self) -> None:

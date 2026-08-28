@@ -14,7 +14,7 @@ from larry_rgb.config import Config
 EXCLUDED_NAMES = {"random", "dummy"}
 
 
-class Effect:
+class Effect(effects.Effect):
     """The random Effect"""
 
     def __init__(self) -> None:

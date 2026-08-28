@@ -7,10 +7,11 @@ Does nothing. Use for testing
 
 from larry.color import ColorList
 
+from larry_rgb import effects
 from larry_rgb.config import Config
 
 
-class Effect:
+class Effect(effects.Effect):
     def __init__(self) -> None:
         self.config: Config
         self.colors: ColorList

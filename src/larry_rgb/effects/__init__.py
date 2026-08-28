@@ -4,21 +4,55 @@ Affects are classes that follow the Effect protocol and register themselves unde
 "larry_rgb.effects" entry point.
 """
 
+from abc import ABC, abstractmethod
 from functools import cache
 from importlib.metadata import entry_points
-from typing import Any, Protocol
+from typing import Any
 
 from larry.color import ColorList
 
 from larry_rgb.config import Config
 
 
-class Effect(Protocol):
-    # pylint: disable=missing-docstring
-    async def reset(self, colors: ColorList, config: Config) -> Any: ...
-    def is_alive(self) -> bool: ...
-    async def run(self, colors: ColorList, config: Config) -> Any: ...
-    async def stop(self) -> Any: ...
+class Effect(ABC):
+    """A larry-rgb Effect
+
+    Effects are plugins for larry-rgb. The plugin is configured to run an effect. The
+    plugin's `run()` method is responsible for instantiating, running, resetting, and
+    stopping the Effect.
+
+    When Effects are run/reset their effect-specific configuration is provided in the
+    config argument as `config.effect.config`. This will be a dict[str, str] object.
+
+    Effects register under the entry-point "larry_rgb.effects"
+    """
+
+    @abstractmethod
+    def __init__(self) -> None:
+        """Initializer
+
+        Takes no arguments
+        """
+
+    @abstractmethod
+    async def reset(self, colors: ColorList, config: Config) -> Any:
+        """Reset the Effect
+
+        When the Effect has already been started but the colors and/or config has
+        changed then this method is called.
+        """
+
+    @abstractmethod
+    def is_alive(self) -> bool:
+        """Return True iff the Effect is running"""
+
+    @abstractmethod
+    async def run(self, colors: ColorList, config: Config) -> Any:
+        """Start the Effect"""
+
+    @abstractmethod
+    async def stop(self) -> Any:
+        """Stop the Effect"""
 
 
 @cache

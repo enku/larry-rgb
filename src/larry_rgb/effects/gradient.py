@@ -7,11 +7,12 @@ from larry.plugins import apply_plugin_filter
 from openrgb.orgb import Device  # type: ignore
 from openrgb.utils import RGBColor  # type: ignore
 
+from larry_rgb import effects
 from larry_rgb import hardware as hw
 from larry_rgb.config import Config
 
 
-class Effect:
+class Effect(effects.Effect):
     """Gradient Effect"""
 
     def __init__(self) -> None:
