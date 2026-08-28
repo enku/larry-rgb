@@ -43,7 +43,7 @@ class Effect:
 
         return hw.RGB(address=address, port=port)
 
-    async def run(self, colors: ColorList, config: Config) -> None:  # pragma: no cover
+    async def run(self, colors: ColorList, config: Config) -> None:
         """Run the effect"""
         await self.reset(colors, config)
         stop_color = None

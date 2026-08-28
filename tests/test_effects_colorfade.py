@@ -1,6 +1,5 @@
 # pylint: disable=missing-docstring,unused-argument
 
-import asyncio
 import datetime as dt
 from itertools import cycle
 from unittest import IsolatedAsyncioTestCase
@@ -9,7 +8,6 @@ from unittest.mock import AsyncMock, Mock, call, patch
 from larry.color import Color
 from unittest_fixtures import Fixtures, given
 
-import larry_rgb
 from larry_rgb import hardware
 from larry_rgb.config import Config
 from larry_rgb.effects import colorfade
@@ -105,20 +103,25 @@ class EffectTestCase(IsolatedAsyncioTestCase):
 
         self.assertIs(rgb, mock_rgb.return_value)
 
-    async def tet_run_calls_reset_with_correct_args(self, fixtures: Fixtures) -> None:
-        config = make_config(colors="#ff0000 #000000")
+    async def test_run_calls_reset_with_correct_args(self, fixtures: Fixtures) -> None:
+        config = Config(make_config(colors="#ff0000 #000000"))
         effect = colorfade.Effect()
 
-        with patch.object(effect, "reset", wraps=effect.reset) as effect_reset:
-            with patch.object(colorfade.Effect, "rgb"):
-                task = asyncio.create_task(larry_rgb.plugin([], config))
-                try:
-                    pass
-                finally:
-                    await asyncio.sleep(0)
-                    effect.running = False
-                    await task
-                effect_reset.assert_called_with([], Config(config))
+        with patch.object(
+            effect, "reset", side_effect=lambda *_: setattr(effect, "config", config)
+        ) as effect_reset:
+            # this ensures that the loop only iterates once
+            with (
+                patch.object(type(effect), "rgb"),
+                patch.object(
+                    colorfade,
+                    "set_gradient",
+                    side_effect=lambda *_: setattr(effect, "running", False),
+                ),
+            ):
+                await effect.run([], config)
+
+        effect_reset.assert_called_with([], config)
 
     async def test_stop(self, fixtures: Fixtures) -> None:
         effect = colorfade.Effect()
@@ -126,7 +129,7 @@ class EffectTestCase(IsolatedAsyncioTestCase):
 
         await effect.stop()
 
-        self.assertIs(effect.running, False)
+        self.assertIs(effect.is_alive(), False)
 
     def test_rgb_when_not_reset(self, fixtures: Fixtures) -> None:
         effect = colorfade.Effect()
