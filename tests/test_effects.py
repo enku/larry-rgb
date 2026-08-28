@@ -45,7 +45,8 @@ effect.gradient.filter = error
     plugin_config = larry_config["plugins:larry_rgb"]
 
     async def test(self, fixtures: Fixtures) -> None:
-        await plugin([], self.plugin_config)
+        task = await plugin([], self.plugin_config)
+        await task
 
         effect = get_effect("dummy")
         config = effect.config  # type: ignore[attr-defined]
