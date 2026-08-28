@@ -1,12 +1,10 @@
 # pylint: disable=missing-docstring,unused-argument
-import configparser as cp
 from dataclasses import dataclass
-from unittest import IsolatedAsyncioTestCase, TestCase
+from unittest import TestCase
 from unittest.mock import Mock, patch
 
 from unittest_fixtures import Fixtures, given
 
-from larry_rgb import plugin
 from larry_rgb.effects import get_effect, list_effects
 
 from .lib import clear_cache
@@ -46,28 +44,3 @@ class TestListEffects(TestCase):
 
         entry_points.select.assert_called_once_with(group="larry_rgb.effects")
         self.assertEqual(effect_names, names)
-
-
-@given(clear_cache)
-class EffectSpecificSettingsTests(IsolatedAsyncioTestCase):
-    larry_config = cp.ConfigParser()
-    larry_config.read_string("""
-[larry]
-plugins = larry_rgb
-
-[plugins:larry_rgb]
-effect = dummy
-effect.dummy.filter = neonize
-effect.gradient.filter = error
-""")
-    plugin_config = larry_config["plugins:larry_rgb"]
-
-    async def test(self, fixtures: Fixtures) -> None:
-        task = await plugin([], self.plugin_config)
-        await task
-
-        effect = get_effect("dummy")
-        config = effect.config  # type: ignore[attr-defined]
-
-        self.assertEqual(config.effect.name, "dummy")
-        self.assertEqual(config.effect.config.filter, "neonize")

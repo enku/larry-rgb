@@ -1,11 +1,16 @@
 # pylint: disable=missing-docstring
 from configparser import ConfigParser
-from unittest import TestCase
+from unittest import IsolatedAsyncioTestCase, TestCase
 
 from larry.color import Color
 from larry.config import ConfigType
+from unittest_fixtures import Fixtures, given
 
+from larry_rgb import plugin
 from larry_rgb.config import Config
+from larry_rgb.effects import get_effect
+
+from .lib import clear_cache
 
 
 def make_config(**kwargs: str) -> Config:
@@ -63,3 +68,29 @@ class ConfigTestCase(TestCase):
 
         self.assertEqual(new_config.effect.name, "gradient")
         self.assertEqual(new_config.effect.config.filter, "bar")
+
+
+@given(clear_cache)
+class EffectSpecificConfigTests(IsolatedAsyncioTestCase):
+    larry_config = ConfigParser()
+    larry_config.read_string("""
+[larry]
+plugins = larry_rgb
+
+[plugins:larry_rgb]
+effect = dummy
+effect.dummy.filter = neonize
+effect.gradient.filter = error
+""")
+    plugin_config = larry_config["plugins:larry_rgb"]
+
+    # pylint: disable=unused-argument
+    async def test(self, fixtures: Fixtures) -> None:
+        task = await plugin([], self.plugin_config)
+        await task
+
+        effect = get_effect("dummy")
+        config = effect.config  # type: ignore[attr-defined]
+
+        self.assertEqual(config.effect.name, "dummy")
+        self.assertEqual(config.effect.config.filter, "neonize")
