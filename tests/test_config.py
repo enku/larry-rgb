@@ -61,13 +61,13 @@ class ConfigTestCase(TestCase):
             }
         )
 
-        self.assertEqual(orig_config.effect.name, "random")
-        self.assertEqual(orig_config.effect.config["filter"], "foo")
+        self.assertEqual(orig_config.effect, "random")
+        self.assertEqual(orig_config.effect_config["filter"], "foo")
 
         new_config = Config.for_effect("gradient", orig_config)
 
-        self.assertEqual(new_config.effect.name, "gradient")
-        self.assertEqual(new_config.effect.config["filter"], "bar")
+        self.assertEqual(new_config.effect, "gradient")
+        self.assertEqual(new_config.effect_config["filter"], "bar")
 
 
 @given(clear_cache)
@@ -92,5 +92,5 @@ effect.gradient.filter = error
         effect = get_effect("dummy")
         config = effect.config  # type: ignore[attr-defined]
 
-        self.assertEqual(config.effect.name, "dummy")
-        self.assertEqual(config.effect.config["filter"], "neonize")
+        self.assertEqual(config.effect, "dummy")
+        self.assertEqual(config.effect_config["filter"], "neonize")

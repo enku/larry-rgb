@@ -41,7 +41,7 @@ class Effect(effects.Effect):
         """Reset the effect"""
         logger.debug("Resetting solid Effect")
 
-        effect_config = config.effect.config
+        effect_config = config.effect_config
         logger.debug("config: %s", f"{effect_config=}")
 
         if color_name := effect_config.get("color", "").strip():

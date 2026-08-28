@@ -22,7 +22,7 @@ class Effect(effects.Effect):
     async def reset(self, colors: ColorList, config: Config) -> None:
         """Reset the effect"""
         self.config = config
-        effect_config = config.effect.config
+        effect_config = config.effect_config
         dominant_colors = Color.dominant(
             colors, int(effect_config.get("dominant_color_count", "10"))
         )

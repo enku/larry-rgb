@@ -13,7 +13,7 @@ from larry_rgb.effects import current, get_effect
 async def plugin(colors: ColorList, larry_config: ConfigType) -> asyncio.Task[Any]:
     """RGB plugin handler"""
     config = Config(larry_config)
-    effect = get_effect(config.effect.name)
+    effect = get_effect(config.effect)
 
     if current_effect := current.get():
         if current_effect != effect:

@@ -1,5 +1,6 @@
 """LarryRGB config"""
 
+import re
 import warnings
 from copy import copy
 from typing import Any, Self
@@ -107,16 +108,24 @@ class Config:
         return self.config.getfloat("intensity", fallback=0.0)
 
     @property
-    def effect(self) -> EffectInfo:
+    def effect(self) -> str:
         """The RGB Effect to run"""
-        name = self.config.get("effect", fallback="colorfade").strip()
-        prefix = f"effect.{name}."
+        return self.config.get("effect", fallback="colorfade").strip()
 
-        return EffectInfo(
-            name,
-            config={
-                key.removeprefix(prefix): value
-                for key, value in self.config.items()
-                if key.startswith(prefix)
-            },
-        )
+    @property
+    def effect_config(self) -> dict[str, str]:
+        """The config for the configured effect"""
+        return self.effect_configs.get(self.effect, {})
+
+    @property
+    def effect_configs(self) -> dict[str, dict[str, str]]:
+        """Return a dict of effect configs for all configured effects"""
+        config: dict[str, dict[str, str]] = {}
+
+        for key, value in self.config.items():
+            if match := re.match(r"effect\.(?P<effect>.*?)\.(?P<setting>.*)", key):
+                config.setdefault(match.group("effect"), {})[
+                    match.group("setting")
+                ] = value
+
+        return config
