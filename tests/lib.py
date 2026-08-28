@@ -77,9 +77,11 @@ def effects_entry_points(
         values: list[mock.Mock] = []
         for name in names:
             ep = mock.Mock()
-            ep.configure_mock(
-                **{"name": name, "load.return_value.return_value.run": mock.AsyncMock()}
-            )
+            config = {
+                "name": name,
+                "load.return_value.return_value.start": mock.AsyncMock(),
+            }
+            ep.configure_mock(**config)
             values.append(ep)
 
         mocked.return_value.select.return_value = values

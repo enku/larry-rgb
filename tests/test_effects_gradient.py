@@ -50,12 +50,12 @@ class GradientEffectTests(IsolatedAsyncioTestCase):
 
         dominant.assert_called_once_with([], 4)
 
-    async def test_run(self) -> None:
+    async def test_start(self) -> None:
         effect = gradient.Effect()
         config = Config(make_config())
 
         with patch.object(effect, "reset", autospec=True) as reset:
-            await effect.run([], config)
+            await effect.start([], config)
 
         self.assertTrue(effect.running)
         reset.assert_called_once_with([], config)

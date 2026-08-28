@@ -24,8 +24,8 @@ class Effect(effects.Effect):
         """Return True if the Effect is running"""
         return self._running
 
-    async def run(self, colors: ColorList, config: Config) -> None:
-        """Run the effect"""
+    async def start(self, colors: ColorList, config: Config) -> None:
+        """Start the effect"""
         logger.debug("Running solid Effect")
 
         if self.is_alive():

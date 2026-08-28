@@ -103,7 +103,9 @@ class EffectTestCase(IsolatedAsyncioTestCase):
 
         self.assertIs(rgb, mock_rgb.return_value)
 
-    async def test_run_calls_reset_with_correct_args(self, fixtures: Fixtures) -> None:
+    async def test_start_calls_reset_with_correct_args(
+        self, fixtures: Fixtures
+    ) -> None:
         config = Config(make_config(colors="#ff0000 #000000"))
         effect = colorfade.Effect()
 
@@ -119,7 +121,7 @@ class EffectTestCase(IsolatedAsyncioTestCase):
                     side_effect=lambda *_: setattr(effect, "running", False),
                 ),
             ):
-                await effect.run([], config)
+                await effect.start([], config)
 
         effect_reset.assert_called_with([], config)
 

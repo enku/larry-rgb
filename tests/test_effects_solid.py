@@ -62,7 +62,7 @@ class EffectIsAliveTests(IsolatedAsyncioTestCase):
         effect = get_effect("solid")
 
         with patch.object(effect, "reset"):
-            await effect.run([], Config(make_config()))
+            await effect.start([], Config(make_config()))
 
         self.assertEqual(effect.is_alive(), True)
 
@@ -70,7 +70,7 @@ class EffectIsAliveTests(IsolatedAsyncioTestCase):
         effect = get_effect("solid")
 
         with patch.object(effect, "reset"):
-            await effect.run([], Config(make_config()))
+            await effect.start([], Config(make_config()))
 
         await effect.stop()
 
@@ -78,7 +78,7 @@ class EffectIsAliveTests(IsolatedAsyncioTestCase):
 
 
 @given(lib.clear_cache)
-class EffectRunTests(IsolatedAsyncioTestCase):
+class EffectStartTests(IsolatedAsyncioTestCase):
     # SolidEffectTests already tests most of this
     # pylint: disable=unused-argument
     async def test_when_running_does_not_reset(self, *, fixtures: Fixtures) -> None:
@@ -90,10 +90,10 @@ class EffectRunTests(IsolatedAsyncioTestCase):
 
         with patch.object(effect, "reset") as reset:
             # when the effect is run once
-            await effect.run([], Config(config))
+            await effect.start([], Config(config))
 
             # and then run a second time
-            await effect.run([], Config(config))
+            await effect.start([], Config(config))
 
         # then the effect isn't reset
         self.assertEqual(reset.call_count, 1)

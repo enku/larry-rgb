@@ -18,7 +18,7 @@ class Effect(ABC):
     """A larry-rgb Effect
 
     Effects are plugins for larry-rgb. The plugin is configured to run an effect. The
-    plugin's `run()` method is responsible for instantiating, running, resetting, and
+    plugin's `start()` method is responsible for instantiating, running, resetting, and
     stopping the Effect.
 
     When Effects are run/reset their effect-specific configuration is provided in the
@@ -47,7 +47,7 @@ class Effect(ABC):
         """Return True iff the Effect is running"""
 
     @abstractmethod
-    async def run(self, colors: ColorList, config: Config) -> Any:
+    async def start(self, colors: ColorList, config: Config) -> Any:
         """Start the Effect"""
 
     @abstractmethod

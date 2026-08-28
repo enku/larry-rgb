@@ -24,7 +24,7 @@ class Effect(effects.Effect):
     def is_alive(self) -> bool:
         return self.running
 
-    async def run(self, colors: ColorList, config: Config) -> None:
+    async def start(self, colors: ColorList, config: Config) -> None:
         self.colors = colors
         self.config = config
 

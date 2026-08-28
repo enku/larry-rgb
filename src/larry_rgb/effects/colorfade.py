@@ -43,8 +43,8 @@ class Effect:
 
         return hw.RGB(address=address, port=port)
 
-    async def run(self, colors: ColorList, config: Config) -> None:
-        """Run the effect"""
+    async def start(self, colors: ColorList, config: Config) -> None:
+        """Start the effect"""
         await self.reset(colors, config)
         stop_color = None
 

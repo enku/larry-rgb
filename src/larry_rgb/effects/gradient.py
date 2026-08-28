@@ -34,7 +34,7 @@ class Effect(effects.Effect):
         """Return True if the effect is running"""
         return self.running
 
-    async def run(self, colors: ColorList, config: Config) -> None:
+    async def start(self, colors: ColorList, config: Config) -> None:
         """Just does a reset"""
         self.running = True
         await self.reset(colors, config)

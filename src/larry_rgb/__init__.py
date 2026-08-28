@@ -21,6 +21,6 @@ async def plugin(colors: ColorList, larry_config: ConfigType) -> asyncio.Task[An
 
     current.set(effect)
 
-    func = effect.reset if effect.is_alive() else effect.run
+    func = effect.reset if effect.is_alive() else effect.start
 
     return asyncio.create_task(func(colors, config))

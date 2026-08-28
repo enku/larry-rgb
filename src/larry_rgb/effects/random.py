@@ -24,15 +24,15 @@ class Effect(effects.Effect):
     async def reset(self, colors: ColorList, config: Config) -> None:
         """Reset the effect"""
         await self.stop()
-        await self.run(colors, config)
+        await self.start(colors, config)
 
-    async def run(self, colors: ColorList, config: Config) -> None:
-        """Run the Effect"""
+    async def start(self, colors: ColorList, config: Config) -> None:
+        """Start the Effect"""
         effect_name = get_random_effect_name()
         self.actual_effect = effects.get_effect(effect_name)
 
         actual_config = Config.for_effect(effect_name, config)
-        await self.actual_effect.run(colors, actual_config)
+        await self.actual_effect.start(colors, actual_config)
 
     async def stop(self) -> None:
         """Stop the Effect and remove the reference"""
