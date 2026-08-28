@@ -1,8 +1,8 @@
 """Solid color Effect"""
 
 import asyncio
-import logging
 
+from larry import LOGGER
 from larry.color import Color, ColorList
 from larry.plugins import apply_plugin_filter
 
@@ -10,7 +10,7 @@ from larry_rgb import effects
 from larry_rgb import hardware as hw
 from larry_rgb.config import Config
 
-logger = logging.getLogger(__package__)
+logger = LOGGER.getChild(__name__)
 
 
 class Effect(effects.Effect):
