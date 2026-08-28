@@ -20,7 +20,7 @@ class EffectTestCase(IsolatedAsyncioTestCase):
     """Tests for the Effect class"""
 
     async def test_reset(self, fixtures: Fixtures) -> None:
-        config = Config(make_config(max_palette_size="3"))
+        config = Config(make_config(**{"effect.colorfade.max_palette_size": "3"}))
         effect = colorfade.Effect()
 
         with patch.object(colorfade, "cycle") as mock_cycle:
@@ -34,8 +34,12 @@ class EffectTestCase(IsolatedAsyncioTestCase):
             set(colors), {Color(156, 125, 57), Color(224, 175, 65), Color(91, 80, 35)}
         )
 
-    async def test_reset_with_pastelize_true(self, fixtures: Fixtures) -> None:
-        config = Config(make_config(max_palette_size="3", pastelize="true"))
+    async def test_reset_with_pastelize_filter(self, fixtures: Fixtures) -> None:
+        config = Config(
+            make_config(
+                **{"effect.colorfade.max_palette_size": "3", "filter": "pastelize"}
+            )
+        )
         effect = colorfade.Effect()
 
         with patch.object(colorfade, "cycle") as mock_cycle:
@@ -50,8 +54,12 @@ class EffectTestCase(IsolatedAsyncioTestCase):
             {Color(255, 215, 127), Color(255, 229, 127), Color(255, 215, 127)},
         )
 
-    async def test_reset_with_timeofday_true(self, fixtures: Fixtures) -> None:
-        config = Config(make_config(max_palette_size="3", timeofday="true"))
+    async def test_reset_with_timeofday_filter(self, fixtures: Fixtures) -> None:
+        config = Config(
+            make_config(
+                **{"effect.colorfade.max_palette_size": "3", "filter": "timeofday"}
+            )
+        )
         effect = colorfade.Effect()
         now = dt.datetime(2025, 9, 7, 21, 54)
 
@@ -68,9 +76,15 @@ class EffectTestCase(IsolatedAsyncioTestCase):
             set(colors), {Color("#2d2811"), Color("#705720"), Color("#4e3e1c")}
         )
 
-    async def test_with_intensity_set(self, fixtures: Fixtures) -> None:
+    async def test_with_intensify_filter(self, fixtures: Fixtures) -> None:
         config = Config(
-            make_config(max_palette_size="3", pastelize="false", intensity="0.5")
+            make_config(
+                **{
+                    "effect.colorfade.max_palette_size": "3",
+                    "filter": "intensify",
+                    "filter.intensify.amount": "0.5",
+                }
+            )
         )
         effect = colorfade.Effect()
 
@@ -84,7 +98,7 @@ class EffectTestCase(IsolatedAsyncioTestCase):
         )
 
     async def test_reset_with_colors(self, fixtures: Fixtures) -> None:
-        config = Config(make_config(colors="#ff0000 #000000"))
+        config = Config(make_config(**{"effect.colorfade.colors": "#ff0000 #000000"}))
         effect = colorfade.Effect()
 
         with patch.object(colorfade, "cycle") as mock_cycle:
