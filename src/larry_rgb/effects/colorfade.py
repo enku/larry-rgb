@@ -71,12 +71,11 @@ class Effect:
         async with self.lock:
             self.config = config
 
-        colors = [
-            Color(i) for i in self.conf("colors", "").strip().split()
-        ] or Color.dominant(colors, int(self.conf("max_palette_size", "10")))
-        colors = apply_plugin_filter(colors, config.config)
+            colors = [
+                Color(i) for i in self.conf("colors", "").strip().split()
+            ] or Color.dominant(colors, int(self.conf("max_palette_size", "10")))
+            colors = apply_plugin_filter(colors, config.config)
 
-        async with self.lock:
             self.colors = cycle(colors)
 
     def conf(self, key: str, default: str | None = None) -> str:
