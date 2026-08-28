@@ -8,7 +8,7 @@ from unittest_fixtures import Fixtures, given
 from larry_rgb.config import Config
 from larry_rgb.effects import get_effect, random
 
-from .lib import IMAGE_COLORS, clear_cache, make_config
+from .lib import IMAGE_COLORS, clear_cache, effects_entry_points, make_config
 
 
 @given(clear_cache)
@@ -26,7 +26,7 @@ class ResetTests(IsolatedAsyncioTestCase):
             effect.run.assert_called_once_with([], config)  # type: ignore[attr-defined]
 
 
-@given(clear_cache)
+@given(clear_cache, effects_entry_points)
 class RunTests(IsolatedAsyncioTestCase):
     async def test(self, fixtures: Fixtures) -> None:
         effect = random.Effect()
@@ -52,8 +52,9 @@ class StopTests(IsolatedAsyncioTestCase):
         self.assertEqual(effect.is_alive(), False)
 
 
+@given(effects_entry_points)
 class GetRandomEffectName(TestCase):
-    def test(self) -> None:
+    def test(self, *, fixtures: Fixtures) -> None:
         with patch("larry_rgb.effects.random.random", sys_random.Random(1)):
             effect_name = random.get_random_effect_name()
 

@@ -13,7 +13,7 @@ from larry import Color
 from larry.config import ConfigType
 from larry.image import RasterImage
 from openrgb.orgb import Device
-from unittest_fixtures import Fixtures, fixture
+from unittest_fixtures import FixtureContext, Fixtures, fixture
 
 from larry_rgb import effects
 
@@ -63,3 +63,25 @@ def device(_: Fixtures, leds: int = 1, zones: int = 1) -> mock.Mock:
 def np_random_seed(_: Fixtures, np_random_seed: int = 1) -> None:
     """Seed numpy's RNG"""
     np.random.seed(np_random_seed)
+
+
+@fixture()
+def effects_entry_points(
+    _: Fixtures, names: list[str] | None = None
+) -> FixtureContext[list[str]]:
+    """Mock larry_rgb.effects entry points"""
+    if names is None:
+        names = ["colorfade", "dummy", "gradient", "random"]
+
+    with mock.patch("larry_rgb.effects.entry_points") as mocked:
+        values: list[mock.Mock] = []
+        for name in names:
+            ep = mock.Mock()
+            ep.configure_mock(
+                **{"name": name, "load.return_value.return_value.run": mock.AsyncMock()}
+            )
+            values.append(ep)
+
+        mocked.return_value.select.return_value = values
+
+        yield names

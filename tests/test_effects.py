@@ -1,13 +1,12 @@
 # pylint: disable=missing-docstring,unused-argument
-from dataclasses import dataclass
 from unittest import TestCase
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
-from unittest_fixtures import Fixtures, given
+from unittest_fixtures import Fixtures, given, where
 
 from larry_rgb.effects import get_effect, list_effects
 
-from .lib import clear_cache
+from .lib import clear_cache, effects_entry_points
 
 
 @given(clear_cache)
@@ -29,18 +28,10 @@ class GetEffectTests(TestCase):
         mock_effect_cls.assert_not_called()
 
 
+@given(effects_entry_points)
+@where(effects_entry_points__names=["foo", "bar", "baz", "random", "dummy", "candy"])
 class TestListEffects(TestCase):
-    def test(self) -> None:
-        @dataclass
-        class MockEP:
-            name: str
+    def test(self, *, fixtures: Fixtures) -> None:
+        names = list_effects()
 
-        names = ["foo", "bar", "baz", "random", "dummy", "candy"]
-        entry_points = Mock()
-        entry_points.select.return_value = [MockEP(name) for name in names]
-
-        with patch("larry_rgb.effects.entry_points", return_value=entry_points):
-            effect_names = list_effects()
-
-        entry_points.select.assert_called_once_with(group="larry_rgb.effects")
-        self.assertEqual(effect_names, names)
+        self.assertEqual(names, ["foo", "bar", "baz", "random", "dummy", "candy"])
