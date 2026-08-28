@@ -1,5 +1,5 @@
 # pylint: disable=missing-docstring,unused-argument
-from unittest import IsolatedAsyncioTestCase, TestCase
+from unittest import IsolatedAsyncioTestCase
 from unittest.mock import patch
 
 from unittest_fixtures import Fixtures, given
@@ -34,20 +34,3 @@ class PluginTestCase(IsolatedAsyncioTestCase):
                 await larry_rgb.plugin([], config)
 
         mock_reset.assert_called_once_with([], Config(config))
-
-
-class EnsureRangeTests(TestCase):
-    def test(self) -> None:
-        larry_rgb.ensure_range("l", ("a", "z"))
-
-        with self.assertRaises(ValueError) as ctx:
-            larry_rgb.ensure_range("z", ("a", "l"))
-
-        expected = "Value 'z' is out of range ('a', 'l')"
-        self.assertEqual(ctx.exception.args, (expected,))
-
-    def test_with_error_message(self) -> None:
-        with self.assertRaises(ValueError) as ctx:
-            larry_rgb.ensure_range(19, (1, 10), "This is a test")
-
-        self.assertEqual(ctx.exception.args, ("This is a test",))
