@@ -1,12 +1,13 @@
 # pylint: disable=missing-docstring,unused-argument
 import configparser as cp
+from dataclasses import dataclass
 from unittest import IsolatedAsyncioTestCase, TestCase
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from unittest_fixtures import Fixtures, given
 
 from larry_rgb import plugin
-from larry_rgb.effects import get_effect
+from larry_rgb.effects import get_effect, list_effects
 
 from .lib import clear_cache
 
@@ -28,6 +29,23 @@ class GetEffectTests(TestCase):
 
         self.assertIs(effect, original_effect)
         mock_effect_cls.assert_not_called()
+
+
+class TestListEffects(TestCase):
+    def test(self) -> None:
+        @dataclass
+        class MockEP:
+            name: str
+
+        names = ["foo", "bar", "baz", "random", "dummy", "candy"]
+        entry_points = Mock()
+        entry_points.select.return_value = [MockEP(name) for name in names]
+
+        with patch("larry_rgb.effects.entry_points", return_value=entry_points):
+            effect_names = list_effects()
+
+        entry_points.select.assert_called_once_with(group="larry_rgb.effects")
+        self.assertEqual(effect_names, names)
 
 
 @given(clear_cache)

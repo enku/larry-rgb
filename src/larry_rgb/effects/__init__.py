@@ -34,6 +34,11 @@ def get_effect(name: str) -> Effect:
     return effect()
 
 
+def list_effects() -> list[str]:
+    """Return a list of the available Effects"""
+    return [i.name for i in entry_points().select(group="larry_rgb.effects")]
+
+
 class _Current:
     """State of the currently running Effect"""
 
