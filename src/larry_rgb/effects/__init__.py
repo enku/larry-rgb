@@ -27,7 +27,7 @@ def get_effect(name: str) -> Effect:
     effects = entry_points().select(group="larry_rgb.effects", name=name)
 
     if not effects:
-        raise LookupError(name)
+        raise LookupError(repr(name))
 
     effect: type[Effect] = tuple(effects)[0].load()
 

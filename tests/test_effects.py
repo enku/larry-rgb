@@ -11,13 +11,13 @@ from .lib import clear_cache, effects_entry_points
 
 @given(clear_cache)
 class GetEffectTests(TestCase):
-    def test_get_effect_when_effect_not_exists(self, fixtures: Fixtures) -> None:
+    def test_get_effect_when_effect_not_exists(self, *, fixtures: Fixtures) -> None:
         with patch("larry_rgb.effects.dummy.Effect", autospec=True) as mock_effect_cls:
             get_effect("dummy")
 
         mock_effect_cls.assert_called_once_with()
 
-    def test_get_effect_when_effect_does_exist(self, fixtures: Fixtures) -> None:
+    def test_get_effect_when_effect_does_exist(self, *, fixtures: Fixtures) -> None:
         effect = get_effect("dummy")
         with patch("larry_rgb.effects.dummy.Effect", autospec=True) as mock_effect_cls:
             original_effect = get_effect("dummy")
@@ -26,6 +26,12 @@ class GetEffectTests(TestCase):
 
         self.assertIs(effect, original_effect)
         mock_effect_cls.assert_not_called()
+
+    def test_nonexistent_effect(self, *, fixtures: Fixtures) -> None:
+        with self.assertRaises(LookupError) as context:
+            get_effect("bogus")
+
+        self.assertEqual(str(context.exception), "'bogus'")
 
 
 @given(effects_entry_points)
