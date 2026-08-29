@@ -1,7 +1,7 @@
 # pylint: disable=missing-docstring,unused-argument
 import random as sys_random
 from unittest import IsolatedAsyncioTestCase, TestCase
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from unittest_fixtures import Fixtures, given
 
@@ -30,12 +30,24 @@ class ResetTests(IsolatedAsyncioTestCase):
 class StartTests(IsolatedAsyncioTestCase):
     async def test(self, fixtures: Fixtures) -> None:
         effect = random.Effect()
+        ge_path = "larry_rgb.effects.random.effects.get_effect"
 
-        with patch("larry_rgb.effects.random.random", sys_random.Random(34)):
-            with patch("larry_rgb.effects.gradient.hw.RGB", autospec=True):
+        with patch(ge_path, return_value=AsyncMock()) as mock_get_effect:
+            with patch("larry_rgb.effects.random.random", sys_random.Random(34)):
                 await effect.start(IMAGE_COLORS, Config(make_config()))
 
-        self.assertEqual(effect.actual_effect, get_effect("gradient"))
+        mock_get_effect.assert_called_once_with("gradient")
+
+    async def test_with_exclude(self, fixtures: Fixtures) -> None:
+        effect = random.Effect()
+        config = {"effect": "random", "effect.random.exclude": "bogus gradient"}
+        ge_path = "larry_rgb.effects.random.effects.get_effect"
+
+        with patch(ge_path, return_value=AsyncMock()) as mock_get_effect:
+            with patch("larry_rgb.effects.random.random", sys_random.Random(34)):
+                await effect.start([], Config(make_config(**config)))
+
+        mock_get_effect.assert_called_once_with("fade")
 
 
 @given(clear_cache)
@@ -62,5 +74,11 @@ class GetRandomEffectName(TestCase):
 
         with patch("larry_rgb.effects.random.random", sys_random.Random(34)):
             effect_name = random.get_random_effect_name()
+
+        self.assertEqual(effect_name, "gradient")
+
+    def test_with_exclude(self, *, fixtures: Fixtures) -> None:
+        with patch("larry_rgb.effects.random.random", sys_random.Random(1)):
+            effect_name = random.get_random_effect_name(exclude=["bogus", "fade"])
 
         self.assertEqual(effect_name, "gradient")

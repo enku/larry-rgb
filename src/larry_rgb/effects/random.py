@@ -5,6 +5,7 @@ Effect (excluding "dummy" and itself.
 """
 
 import random
+from typing import Iterable
 
 from larry.color import ColorList
 
@@ -30,7 +31,9 @@ class Effect(effects.Effect):
 
     async def start(self, colors: ColorList, config: Config) -> None:
         """Start the Effect"""
-        effect_name = get_random_effect_name()
+        effect_config = config.effect_config
+        exclude = effect_config.get("exclude", "").strip().split()
+        effect_name = get_random_effect_name(exclude=exclude)
         logger.debug("Working on behalf of %s", effect_name)
         self.actual_effect = effects.get_effect(effect_name)
 
@@ -47,9 +50,11 @@ class Effect(effects.Effect):
         return self.actual_effect.is_alive()
 
 
-def get_random_effect_name() -> str:
+def get_random_effect_name(*, exclude: Iterable[str] = ()) -> str:
     """Return a random Effect name for the available Effects
 
-    Excludes EXCLUDED_NAMES.
+    Excludes EXCLUDED_NAMES and `excludes`
     """
-    return random.choice([e for e in effects.list_effects() if e not in EXCLUDED_NAMES])
+    excludes = EXCLUDED_NAMES.union(exclude)
+
+    return random.choice([e for e in effects.list_effects() if e not in excludes])
