@@ -23,6 +23,7 @@ fade = "larry_rgb.effects.fade:Effect"
 gradient = "larry_rgb.effects.gradient:Effect"
 random = "larry_rgb.effects.random:Effect"
 solid = "larry_rgb.effects.solid:Effect"
+stream = "larry_rgb.effects.stream:Effect"
 
 [project.urls]
 homepage = "https://github.com/enku/larry-rgb"

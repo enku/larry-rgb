@@ -1,0 +1,121 @@
+"""Gradient Effect"""
+
+import asyncio
+from dataclasses import dataclass
+from functools import cached_property
+from itertools import cycle
+
+from larry import LOGGER
+from larry.color import Color, ColorList
+from larry.plugins import apply_plugin_filter
+from openrgb.orgb import Device  # type: ignore
+from openrgb.utils import RGBColor  # type: ignore
+
+from larry_rgb import effects
+from larry_rgb import hardware as hw
+from larry_rgb.config import Config
+
+logger = LOGGER.getChild(__name__)
+
+
+class Effect(effects.Effect):
+    """Gradient Effect"""
+
+    def __init__(self) -> None:
+        self.config: Config
+        self._running = False
+        self._task: asyncio.Task[None] = asyncio.create_task(asyncio.sleep(0))
+
+    async def start(self, colors: ColorList, config: Config) -> None:
+        """Just does a reset"""
+        if not self._running:
+            await self.reset(colors, config)
+
+    async def reset(self, colors: ColorList, config: Config) -> None:
+        """Reset the effect"""
+        await self.stop()
+
+        self.config = config
+        self._running = True
+
+        effect_config = parse_effect_config(config.effect_config)
+        dominant_colors = Color.dominant(colors, effect_config.dominant_color_count)
+        interval = effect_config.interval
+
+        self._task = asyncio.create_task(self.hw_update(dominant_colors, interval))
+        logger.debug("started task for hw_update: %s", self._task.get_name())
+
+    def is_alive(self) -> bool:
+        """Return True if the effect is running"""
+        return self._running
+
+    async def stop(self) -> None:
+        """Stop the Effect"""
+        self._running = False
+        await self._task
+
+    @cached_property
+    def rgb(self) -> hw.RGB:
+        """Returns the RGB instance.
+
+        A (cached) property so we only instantiate it once, lazily
+        """  # pylint: disable=duplicate-code
+        if not hasattr(self, "config"):
+            raise RuntimeError("Effect has not been started")
+
+        address_and_port = self.config.address
+        address, _, port_str = address_and_port.partition(":")
+        port = int(port_str) if port_str else 6742
+
+        return hw.RGB(address=address, port=port)
+
+    async def hw_update(self, dominant_colors: ColorList, interval: float) -> None:
+        """Update hardware, forever"""
+        logger.debug("hw_update() started with interval=%s", interval)
+        client = self.rgb.openrgb_client
+        offsets = {dev: cycle(range(len(dev.colors) - 1)) for dev in client.ee_devices}
+
+        while self._running:
+            for device in client.ee_devices:
+                self.color_device(device, dominant_colors, next(offsets[device]))
+
+            client.show()
+            await asyncio.sleep(interval)
+
+        logger.debug("hw_update() shutting down")
+
+    def color_device(self, device: Device, colors: ColorList, i: int) -> None:
+        """Set the given device's color to the given color"""
+        # stop at the start color
+        colors = colors + colors[::-1][1:]
+
+        color_count = len(device.colors)
+
+        # Create gradient. Shave off the last color because it's the same as the start
+        # color
+        gradient = list(Color.gradient2(colors[:color_count], color_count))[:-1]
+        gradient = apply_plugin_filter(gradient, self.config.config)
+        i = i % len(gradient)
+
+        to_set = gradient[i : i + color_count]
+
+        while len(to_set) < color_count:
+            to_set = to_set + gradient[: color_count - len(to_set)]
+
+        device.colors = [RGBColor(c.red, c.green, c.blue) for c in to_set]
+
+
+@dataclass(kw_only=True, frozen=True)
+class EffectConfig:
+    """Effect-specific config for the stream effect"""
+
+    dominant_color_count: int
+    interval: float
+
+
+def parse_effect_config(effect_config: dict[str, str]) -> EffectConfig:
+    """Convert Config.effect_config to EffectConfig"""
+    return EffectConfig(
+        dominant_color_count=int(effect_config.get("dominant_color_count", "10")),
+        interval=float(effect_config.get("interval", "0.1")),
+    )
