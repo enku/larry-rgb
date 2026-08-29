@@ -48,7 +48,7 @@ class Config:
     @property
     def effect(self) -> str:
         """The RGB Effect to run"""
-        return self.config.get("effect", fallback="colorfade").strip()
+        return self.config.get("effect", fallback="fade").strip()
 
     @property
     def effect_config(self) -> dict[str, str]:

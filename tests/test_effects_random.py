@@ -58,7 +58,7 @@ class GetRandomEffectName(TestCase):
         with patch("larry_rgb.effects.random.random", sys_random.Random(1)):
             effect_name = random.get_random_effect_name()
 
-        self.assertEqual(effect_name, "colorfade")
+        self.assertEqual(effect_name, "fade")
 
         with patch("larry_rgb.effects.random.random", sys_random.Random(34)):
             effect_name = random.get_random_effect_name()

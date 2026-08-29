@@ -71,7 +71,7 @@ def effects_entry_points(
 ) -> FixtureContext[list[str]]:
     """Mock larry_rgb.effects entry points"""
     if names is None:
-        names = ["colorfade", "dummy", "gradient", "random"]
+        names = ["fade", "dummy", "gradient", "random"]
 
     with mock.patch("larry_rgb.effects.entry_points") as mocked:
         values: list[mock.Mock] = []

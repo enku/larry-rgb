@@ -1,4 +1,4 @@
-"""The "colorfade" effect"""
+"""The "fade" effect"""
 
 import asyncio
 from functools import cached_property

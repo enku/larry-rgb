@@ -35,7 +35,7 @@ class ConfigTestCase(TestCase):
                 "effect": "random",
                 "effect.random.filter": "foo",
                 "effect.gradient.filter": "bar",
-                "effect.colorfade.filter": "baz",
+                "effect.fade.filter": "baz",
             }
         )
 

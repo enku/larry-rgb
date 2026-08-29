@@ -18,8 +18,8 @@ license = {text = "MIT"}
 larry_rgb = "larry_rgb:plugin"
 
 [project.entry-points."larry_rgb.effects"]
-colorfade = "larry_rgb.effects.colorfade:Effect"
 dummy = "larry_rgb.effects.dummy:Effect"
+fade = "larry_rgb.effects.fade:Effect"
 gradient = "larry_rgb.effects.gradient:Effect"
 random = "larry_rgb.effects.random:Effect"
 solid = "larry_rgb.effects.solid:Effect"
