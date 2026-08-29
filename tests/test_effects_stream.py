@@ -84,24 +84,36 @@ class EffectResetTests(IsolatedAsyncioTestCase):
 
     async def test_creates_new_task(self) -> None:
         effect = stream.Effect()
-        config = Config(
-            make_config(
-                **{
-                    "effect": "stream",
-                    "effect.stream.interval": "9.0",
-                    "effect.stream.dominant_color_count": "9",
-                }
-            )
-        )
 
-        with patch.object(asyncio, "create_task", wraps=asyncio.create_task) as create:
-            with patch.object(effect, "hw_update", return_value="called") as hw_update:
-                await effect.reset(IMAGE_COLORS, config)
+        for reverse in (False, True):
+            with self.subTest(reverse=reverse):
+                config = Config(
+                    make_config(
+                        **{
+                            "effect": "stream",
+                            "effect.stream.interval": "9.0",
+                            "effect.stream.dominant_color_count": "9",
+                            "effect.stream.direction": (
+                                "backward" if reverse else "forward"
+                            ),
+                        }
+                    )
+                )
 
-        hw_update.assert_called_once_with(Color.dominant(IMAGE_COLORS, 9), 9.0)
-        create.assert_called_once()
-        result = await effect._task  # type: ignore[func-returns-value]
-        self.assertEqual(result, "called")
+                with patch.object(
+                    asyncio, "create_task", wraps=asyncio.create_task
+                ) as create:
+                    with patch.object(
+                        effect, "hw_update", return_value="called"
+                    ) as hw_update:
+                        await effect.reset(IMAGE_COLORS, config)
+
+                hw_update.assert_called_once_with(
+                    Color.dominant(IMAGE_COLORS, 9), 9.0, reverse
+                )
+                create.assert_called_once()
+                result = await effect._task  # type: ignore[func-returns-value]
+                self.assertEqual(result, "called")
 
 
 class EffectIsAliveTests(IsolatedAsyncioTestCase):
@@ -173,7 +185,7 @@ class EffectHWUpdateTests(IsolatedAsyncioTestCase):
                 client.ee_devices = [
                     Mock(colors=rgbcolors("#000 #000 #000")) for _ in range(3)
                 ]
-                task = asyncio.create_task(effect.hw_update(colors, 0.01))
+                task = asyncio.create_task(effect.hw_update(colors, 0.01, False))
                 await asyncio.sleep(0)
                 effect._running = False
                 await task
@@ -181,9 +193,9 @@ class EffectHWUpdateTests(IsolatedAsyncioTestCase):
         self.assertEqual(color_device.call_count, 3)
         devices = client.ee_devices
         expected_calls = [
-            call(devices[0], colors, 0),
-            call(devices[1], colors, 0),
-            call(devices[2], colors, 0),
+            call(devices[0], colors, 0, reverse=False),
+            call(devices[1], colors, 0, reverse=False),
+            call(devices[2], colors, 0, reverse=False),
         ]
         self.assertEqual(color_device.mock_calls, expected_calls)
         client.show.assert_called_once_with()
@@ -200,7 +212,7 @@ class EffectHWUpdateTests(IsolatedAsyncioTestCase):
                 client.ee_devices = [
                     Mock(colors=rgbcolors("#000 #000 #000")) for _ in range(3)
                 ]
-                task = asyncio.create_task(effect.hw_update(colors, 0.01))
+                task = asyncio.create_task(effect.hw_update(colors, 0.01, False))
                 await asyncio.sleep(0)
                 await asyncio.sleep(0.01)
                 effect._running = False
@@ -215,15 +227,14 @@ class EffectColorDeviceTests(IsolatedAsyncioTestCase):
         effect.config = Config(make_config())
         device = Mock(colors=[RGBColor(0, 0, 0) for _ in range(9)])
 
-        effect.color_device(device, [RED, GREEN, BLUE], 0)
+        for reverse in (False, True):
+            with self.subTest(reverse=reverse):
+                effect.color_device(device, [RED, GREEN, BLUE], 0, reverse=reverse)
 
-        self.assertEqual(
-            device.colors,
-            rgbcolors(
-                "#ff0000 #aa5500 #00ff00 #00aa55 "
-                "#0000ff #0055aa #00ff00 #55aa00 #ff0000"
-            ),
-        )
+                expected = rgbcolors(
+                    "#ff0000 #aa5500 #00ff00 #00aa55 #0000ff #0055aa #00ff00 #55aa00 #ff0000"
+                )
+                self.assertEqual(device.colors, expected[::-1] if reverse else expected)
 
 
 class ParseEffectTests(TestCase):
@@ -231,7 +242,12 @@ class ParseEffectTests(TestCase):
         effect_config = stream.parse_effect_config({})
 
         self.assertEqual(
-            effect_config, stream.EffectConfig(dominant_color_count=10, interval=0.1)
+            effect_config,
+            stream.EffectConfig(
+                direction=stream.Direction.FORWARD,
+                dominant_color_count=10,
+                interval=0.1,
+            ),
         )
 
     def test_dominant_color_count(self) -> None:

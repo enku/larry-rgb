@@ -1,7 +1,9 @@
 """Gradient Effect"""
 
 import asyncio
+import random
 from dataclasses import dataclass
+from enum import StrEnum, unique
 from functools import cached_property
 from itertools import cycle
 
@@ -16,6 +18,15 @@ from larry_rgb import hardware as hw
 from larry_rgb.config import Config
 
 logger = LOGGER.getChild(__name__)
+
+
+@unique
+class Direction(StrEnum):
+    """Configured direction of the stream"""
+
+    FORWARD = "forward"
+    BACKWARD = "backward"
+    RANDOM = "random"
 
 
 class Effect(effects.Effect):
@@ -42,7 +53,17 @@ class Effect(effects.Effect):
         dominant_colors = Color.dominant(colors, effect_config.dominant_color_count)
         interval = effect_config.interval
 
-        self._task = asyncio.create_task(self.hw_update(dominant_colors, interval))
+        match effect_config.direction:
+            case Direction.FORWARD:
+                reverse = False
+            case Direction.BACKWARD:
+                reverse = True
+            case Direction.RANDOM:
+                reverse = random.choice([True, False])
+
+        self._task = asyncio.create_task(
+            self.hw_update(dominant_colors, interval, reverse)
+        )
         logger.debug("started task for hw_update: %s", self._task.get_name())
 
     def is_alive(self) -> bool:
@@ -69,23 +90,34 @@ class Effect(effects.Effect):
 
         return hw.RGB(address=address, port=port)
 
-    async def hw_update(self, dominant_colors: ColorList, interval: float) -> None:
+    async def hw_update(
+        self, dominant_colors: ColorList, interval: float, reverse: bool
+    ) -> None:
         """Update hardware, forever"""
-        logger.debug("hw_update() started with interval=%s", interval)
+        logger.debug(
+            "hw_update() started with interval=%s, reverse=%s", interval, reverse
+        )
         client = self.rgb.openrgb_client
         offsets = {dev: cycle(range(len(dev.colors) - 1)) for dev in client.ee_devices}
 
         while self._running:
             for device in client.ee_devices:
-                self.color_device(device, dominant_colors, next(offsets[device]))
+                self.color_device(
+                    device, dominant_colors, next(offsets[device]), reverse=reverse
+                )
 
             client.show()
             await asyncio.sleep(interval)
 
         logger.debug("hw_update() shutting down")
 
-    def color_device(self, device: Device, colors: ColorList, i: int) -> None:
-        """Set the given device's color to the given color"""
+    def color_device(
+        self, device: Device, colors: ColorList, i: int, *, reverse: bool = False
+    ) -> None:
+        """Set the given device's color to the given color
+
+        If reverse=True, colors are set in their reverse order.
+        """
         # stop at the start color
         colors = colors + colors[::-1][1:]
 
@@ -102,7 +134,8 @@ class Effect(effects.Effect):
         while len(to_set) < color_count:
             to_set = to_set + gradient[: color_count - len(to_set)]
 
-        device.colors = [RGBColor(c.red, c.green, c.blue) for c in to_set]
+        iterable = reversed(to_set) if reverse else to_set
+        device.colors = [RGBColor(c.red, c.green, c.blue) for c in iterable]
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -110,6 +143,7 @@ class EffectConfig:
     """Effect-specific config for the stream effect"""
 
     dominant_color_count: int
+    direction: Direction
     interval: float
 
 
@@ -117,5 +151,6 @@ def parse_effect_config(effect_config: dict[str, str]) -> EffectConfig:
     """Convert Config.effect_config to EffectConfig"""
     return EffectConfig(
         dominant_color_count=int(effect_config.get("dominant_color_count", "10")),
+        direction=Direction(effect_config.get("direction", "forward").lower()),
         interval=float(effect_config.get("interval", "0.1")),
     )
