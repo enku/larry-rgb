@@ -59,11 +59,12 @@ class Effect:
             colors, effect_config.max_palette_size
         )
         colors = apply_plugin_filter(colors, config.config)
+        color_cycle = cycle(colors)
 
         while self.running:
             stop_color = await set_gradient(
                 self.rgb(config.address),
-                cycle(colors),
+                color_cycle,
                 effect_config.steps,
                 effect_config.pause_after_fade,
                 effect_config.interval,
