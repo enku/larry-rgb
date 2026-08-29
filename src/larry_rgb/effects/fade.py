@@ -1,10 +1,11 @@
 """The "fade" effect"""
 
 import asyncio
-from functools import cached_property
+from dataclasses import dataclass
 from itertools import cycle
-from typing import Awaitable, Callable, Iterator
+from typing import Any, Iterator, Self
 
+from larry import LOGGER
 from larry.color import Color, ColorList
 from larry.plugins import apply_plugin_filter
 
@@ -12,30 +13,23 @@ from larry_rgb import colorlib
 from larry_rgb import hardware as hw
 from larry_rgb.config import Config
 
+logger = LOGGER.getChild(__name__)
+
 
 class Effect:
     """Container for the Effect coroutine"""
 
     def __init__(self) -> None:
-        self.config: Config
-        self.lock = asyncio.Lock()
-        self.colors: Iterator[Color] = cycle([])
         self.running = False
+        self._task: asyncio.Task[Any] = asyncio.create_task(asyncio.sleep(0))
 
     def is_alive(self) -> bool:
         """Return True if effect is running"""
         return self.running
 
-    @cached_property
-    def rgb(self) -> hw.RGB:
-        """Returns the RGB instance.
-
-        A (cached) property so we only instantiate it once, lazily
-        """
-        if not hasattr(self, "config"):
-            raise RuntimeError("Effect has not been (re)set")
-
-        address_and_port = self.config.address
+    def rgb(self, address: str) -> hw.RGB:
+        """Returns the RGB instance"""
+        address_and_port = address
         address, _, port_str = address_and_port.partition(":")
         port = int(port_str) if port_str else 6742
 
@@ -44,52 +38,63 @@ class Effect:
     async def start(self, colors: ColorList, config: Config) -> None:
         """Start the effect"""
         await self.reset(colors, config)
-        stop_color = None
-
-        async with self.lock:
-            self.running = True
-
-        while self.running:
-            async with self.lock:
-                stop_color = await set_gradient(
-                    self.rgb,
-                    self.colors,
-                    int(self.conf("steps", "20")),
-                    float(self.conf("pause_after_fade", "0.0")),
-                    float(self.conf("interval", "0.05")),
-                    stop_color,
-                )
-        self.running = False
 
     async def stop(self) -> None:
         """Queue the effect to stop"""
-        async with self.lock:
-            self.running = False
+        self.running = False
+        await self._task
 
     async def reset(self, colors: ColorList, config: Config) -> None:
         """Reset the effect's color list"""
-        async with self.lock:
-            self.config = config
+        await self.stop()
 
-            colors = [
-                Color(i) for i in self.conf("colors", "").strip().split()
-            ] or Color.dominant(colors, int(self.conf("max_palette_size", "10")))
-            colors = apply_plugin_filter(colors, config.config)
+        self.running = True
+        self._task = asyncio.create_task(self.hw_update(config, colors))
 
-            self.colors = cycle(colors)
+    async def hw_update(self, config: Config, colors: ColorList) -> None:
+        """Update hardware, forever"""
+        stop_color = None
+        effect_config = EffectConfig.from_config(config)
+        colors = effect_config.colors or Color.dominant(
+            colors, effect_config.max_palette_size
+        )
+        colors = apply_plugin_filter(colors, config.config)
 
-    def conf(self, key: str, default: str | None = None) -> str:
-        """Return the Effect config with the given name
+        while self.running:
+            stop_color = await set_gradient(
+                self.rgb(config.address),
+                cycle(colors),
+                effect_config.steps,
+                effect_config.pause_after_fade,
+                effect_config.interval,
+                stop_color,
+            )
+        logger.debug("Shutting down")
 
-        If default is provided and is not None, it will be returned when no config for
-        the given name exists.
-        """
-        try:
-            return self.config.effect_config[key]
-        except KeyError:
-            if default is not None:
-                return default
-            raise
+
+@dataclass(kw_only=True, frozen=True)
+class EffectConfig:
+    """Effect-specific config for the fade effect"""
+
+    colors: ColorList | None
+    interval: float
+    max_palette_size: int
+    pause_after_fade: float
+    steps: int
+
+    @classmethod
+    def from_config(cls, config: Config) -> Self:
+        """Convert Config.effect_config to EffectConfig"""
+        effect_config = config.effect_config
+
+        return cls(
+            colors=[Color(i) for i in effect_config.get("colors", "").strip().split()]
+            or None,
+            interval=float(effect_config.get("interval", "0.05")),
+            max_palette_size=int(effect_config.get("max_palette_size", "10")),
+            pause_after_fade=float(effect_config.get("pause_after_fade", "0.0")),
+            steps=int(effect_config.get("steps", "20")),
+        )
 
 
 async def set_gradient(
@@ -99,7 +104,6 @@ async def set_gradient(
     pause_after_fade: float,
     interval: float,
     prev_stop_color: Color | None,
-    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
 ) -> Color:
     """Set the next gradient in the cycle
 
@@ -114,7 +118,9 @@ async def set_gradient(
     for color in Color.gradient(*end_colors, steps):
         if color != previous_color:
             rgb.set_color(color)
-        await sleep(end_wait if color in end_colors and pause_after_fade else interval)
+        await asyncio.sleep(
+            end_wait if color in end_colors and pause_after_fade else interval
+        )
         previous_color = color
 
     return end_colors[1]

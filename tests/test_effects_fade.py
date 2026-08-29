@@ -1,9 +1,10 @@
-# pylint: disable=missing-docstring,unused-argument
+# pylint: disable=missing-docstring,unused-argument,protected-access
 
-import datetime as dt
+import asyncio
 from itertools import cycle
+from typing import Any
 from unittest import IsolatedAsyncioTestCase
-from unittest.mock import AsyncMock, Mock, call, patch
+from unittest.mock import ANY, AsyncMock, Mock, call, patch
 
 from larry.color import Color
 from unittest_fixtures import Fixtures, given
@@ -12,7 +13,7 @@ from larry_rgb import hardware
 from larry_rgb.config import Config
 from larry_rgb.effects import fade
 
-from .lib import BLUE, GREEN, IMAGE_COLORS, RED, make_config, np_random_seed
+from .lib import BLUE, GREEN, RED, make_config, np_random_seed
 
 
 @given(np_random_seed)
@@ -20,96 +21,82 @@ class EffectTestCase(IsolatedAsyncioTestCase):
     """Tests for the Effect class"""
 
     async def test_reset(self, fixtures: Fixtures) -> None:
-        config = Config(make_config(**{"effect.fade.max_palette_size": "3"}))
-        effect = fade.Effect()
-
-        with patch.object(fade, "cycle") as mock_cycle:
-            await effect.reset(IMAGE_COLORS, config)
-
-        self.assertIs(effect.config, config)
-        self.assertEqual(effect.colors, mock_cycle.return_value)
-        call_args = mock_cycle.call_args[0]
-        colors = call_args[0]
-        self.assertEqual(
-            set(colors), {Color(156, 125, 57), Color(224, 175, 65), Color(91, 80, 35)}
-        )
-
-    async def test_reset_with_pastelize_filter(self, fixtures: Fixtures) -> None:
-        config = Config(
-            make_config(**{"effect.fade.max_palette_size": "3", "filter": "pastelize"})
-        )
-        effect = fade.Effect()
-
-        with patch.object(fade, "cycle") as mock_cycle:
-            await effect.reset(IMAGE_COLORS, config)
-
-        self.assertIs(effect.config, config)
-        self.assertEqual(effect.colors, mock_cycle.return_value)
-        call_args = mock_cycle.call_args[0]
-        colors = call_args[0]
-        self.assertEqual(
-            set(colors),
-            {Color(255, 215, 127), Color(255, 229, 127), Color(255, 215, 127)},
-        )
-
-    async def test_reset_with_timeofday_filter(self, fixtures: Fixtures) -> None:
-        config = Config(
-            make_config(**{"effect.fade.max_palette_size": "3", "filter": "timeofday"})
-        )
-        effect = fade.Effect()
-        now = dt.datetime(2025, 9, 7, 21, 54)
-
-        with patch.object(fade, "cycle") as mock_cycle:
-            with patch("larry.filters.timeofday.now", return_value=now):
-                await effect.reset(IMAGE_COLORS, config)
-
-        self.assertIs(effect.config, config)
-        self.assertEqual(effect.colors, mock_cycle.return_value)
-        call_args = mock_cycle.call_args[0]
-        colors = call_args[0]
-
-        self.assertEqual(
-            set(colors), {Color("#2d2811"), Color("#705720"), Color("#4e3e1c")}
-        )
-
-    async def test_with_intensify_filter(self, fixtures: Fixtures) -> None:
         config = Config(
             make_config(
-                **{
-                    "effect.fade.max_palette_size": "3",
-                    "filter": "intensify",
-                    "filter.intensify.amount": "0.5",
-                }
+                **{"address": "host.invalid:1234", "effect.fade.max_palette_size": "3"}
             )
         )
         effect = fade.Effect()
 
-        with patch.object(fade, "cycle") as mock_cycle:
-            await effect.reset(IMAGE_COLORS, config)
+        orig_task = effect._task
+        self.assertEqual(orig_task.done(), False)
 
-        call_args = mock_cycle.call_args[0]
-        colors = call_args[0]
-        self.assertEqual(
-            set(colors), {Color(91, 74, 7), Color(224, 150, 0), Color(156, 109, 7)}
+        with patch.object(effect, "hw_update") as hw_update:
+            with patch.object(effect, "stop", wraps=effect.stop) as stop:
+                await effect.reset([], config)
+
+        hw_update.assert_called_once_with(config, [])
+        stop.assert_called_once_with()
+        self.assertEqual(orig_task.done(), True)
+
+    async def test_hw_update(self, fixtures: Fixtures) -> None:
+        config = Config(
+            make_config(
+                **{"address": "host.invalid:1234", "effect.fade.max_palette_size": "3"}
+            )
+        )
+        effect = fade.Effect()
+        effect.running = True
+
+        with patch.object(fade, "set_gradient") as set_gradient:
+            # stop the loop at first iteration
+            set_gradient.side_effect = lambda *_: setattr(effect, "running", False)
+
+            with patch.object(effect, "rgb") as rgb:
+                await effect.hw_update(config, [RED, GREEN, BLUE])
+
+        set_gradient.assert_called_once_with(rgb.return_value, ANY, 20, 0.0, 0.05, None)
+        rgb.assert_called_once_with("host.invalid:1234")
+
+    async def test_hw_update2(self, fixtures: Fixtures) -> None:
+        config = Config(
+            make_config(
+                **{"address": "host.invalid:1234", "effect.fade.max_palette_size": "3"}
+            )
+        )
+        effect = fade.Effect()
+        effect.running = True
+        call_count = 0
+
+        # side effect to run set_gradient twice
+        def side_effect(*_: Any) -> Color:
+            nonlocal call_count
+
+            call_count += 1
+
+            if call_count == 2:
+                effect.running = False
+
+            return Color(call_count * 10, call_count * 10, call_count * 10)
+
+        with patch.object(fade, "set_gradient") as set_gradient:
+            set_gradient.side_effect = side_effect
+
+            with patch.object(effect, "rgb") as rgb:
+                await effect.hw_update(config, [RED, GREEN, BLUE])
+
+        self.assertEqual(call_count, 2)
+        self.assertEqual(set_gradient.call_count, 2)
+        set_gradient.assert_called_with(
+            rgb.return_value, ANY, 20, 0.0, 0.05, Color(10, 10, 10)
         )
 
-    async def test_reset_with_colors(self, fixtures: Fixtures) -> None:
-        config = Config(make_config(**{"effect.fade.colors": "#ff0000 #000000"}))
-        effect = fade.Effect()
-
-        with patch.object(fade, "cycle") as mock_cycle:
-            await effect.reset(IMAGE_COLORS, config)
-
-        self.assertEqual(effect.colors, mock_cycle.return_value)
-        mock_cycle.assert_called_once_with([Color("#ff0000"), Color("#000000")])
-
     async def test_rgb(self, fixtures: Fixtures) -> None:
-        config = Config(make_config(max_palette_size="3"))
         effect = fade.Effect()
+        config = Config(make_config(address="host.invalid:4444"))
 
         with patch("larry_rgb.effects.fade.hw.RGB", autospec=True) as mock_rgb:
-            await effect.reset(IMAGE_COLORS, config)
-            rgb = effect.rgb
+            rgb = effect.rgb(config.address)
 
         self.assertIs(rgb, mock_rgb.return_value)
 
@@ -119,19 +106,12 @@ class EffectTestCase(IsolatedAsyncioTestCase):
         config = Config(make_config(colors="#ff0000 #000000"))
         effect = fade.Effect()
 
-        with patch.object(
-            effect, "reset", side_effect=lambda *_: setattr(effect, "config", config)
-        ) as effect_reset:
-            # this ensures that the loop only iterates once
-            with (
-                patch.object(type(effect), "rgb"),
-                patch.object(
-                    fade,
-                    "set_gradient",
-                    side_effect=lambda *_: setattr(effect, "running", False),
-                ),
-            ):
-                await effect.start([], config)
+        with (
+            patch.object(effect, "hw_update"),
+            patch.object(effect, "reset") as effect_reset,
+        ):
+            await effect.start([], config)
+            await effect._task  # pylint: disable=protected-access
 
         effect_reset.assert_called_with([], config)
 
@@ -142,15 +122,6 @@ class EffectTestCase(IsolatedAsyncioTestCase):
         await effect.stop()
 
         self.assertIs(effect.is_alive(), False)
-
-    def test_rgb_when_not_reset(self, fixtures: Fixtures) -> None:
-        effect = fade.Effect()
-
-        with self.assertRaises(RuntimeError) as error_context:
-            effect.rgb  # pylint: disable=pointless-statement
-
-        exception = error_context.exception
-        self.assertEqual("Effect has not been (re)set", str(exception))
 
 
 class SetGradientTests(IsolatedAsyncioTestCase):
@@ -165,9 +136,11 @@ class SetGradientTests(IsolatedAsyncioTestCase):
         steps = 5
         interval = 6.0
         pause_after_fade = 20.0
-        color = await fade.set_gradient(
-            mock_rgb, colors, steps, pause_after_fade, interval, None, mock_sleep
-        )
+
+        with patch.object(asyncio, "sleep") as mock_sleep:
+            color = await fade.set_gradient(
+                mock_rgb, colors, steps, pause_after_fade, interval, None
+            )
 
         self.assertEqual(color, GREEN)
 
@@ -178,18 +151,18 @@ class SetGradientTests(IsolatedAsyncioTestCase):
         calls = [call(10.0), call(6.0), call(6.0), call(6.0), call(10.0)]
         self.assertEqual(mock_sleep.call_args_list, calls)
 
-        mock_sleep.reset_mock()
-        color = await fade.set_gradient(
-            mock_rgb, colors, steps, pause_after_fade, interval, color, mock_sleep
-        )
+        with patch.object(asyncio, "sleep") as mock_sleep:
+            color = await fade.set_gradient(
+                mock_rgb, colors, steps, pause_after_fade, interval, color
+            )
 
         self.assertEqual(color, BLUE)
         self.assertEqual(mock_sleep.call_args_list, calls)
 
-        mock_sleep.reset_mock()
-        color = await fade.set_gradient(
-            mock_rgb, colors, steps, pause_after_fade, interval, color, mock_sleep
-        )
+        with patch.object(asyncio, "sleep") as mock_sleep:
+            color = await fade.set_gradient(
+                mock_rgb, colors, steps, pause_after_fade, interval, color
+            )
 
         self.assertEqual(color, RED)
         self.assertEqual(mock_sleep.call_args_list, calls)
@@ -198,21 +171,16 @@ class SetGradientTests(IsolatedAsyncioTestCase):
         prev_stop_color = Color(45, 23, 212)
         mock_rgb = Mock(spec=hardware.RGB)()
         mock_rgb.devices = [Mock(), Mock(), Mock()]
-        mock_sleep = AsyncMock()
 
         colors = cycle([RED, GREEN, BLUE])
         steps = 5
         interval = 6.0
         pause_after_fade = 20.0
-        await fade.set_gradient(
-            mock_rgb,
-            colors,
-            steps,
-            pause_after_fade,
-            interval,
-            prev_stop_color,
-            mock_sleep,
-        )
+
+        with patch.object(asyncio, "sleep") as mock_sleep:
+            await fade.set_gradient(
+                mock_rgb, colors, steps, pause_after_fade, interval, prev_stop_color
+            )
 
         gradient = Color.gradient(prev_stop_color, RED, 5)
         calls = [call(color) for color in gradient]
@@ -225,15 +193,15 @@ class SetGradientTests(IsolatedAsyncioTestCase):
         color = Color(45, 23, 212)
         mock_rgb = Mock(spec=hardware.RGB)()
         mock_rgb.devices = [Mock(), Mock(), Mock()]
-        mock_sleep = AsyncMock()
 
         colors = cycle([color])
         steps = 5
         interval = 6.0
         pause_after_fade = 20.0
 
-        await fade.set_gradient(
-            mock_rgb, colors, steps, pause_after_fade, interval, None, mock_sleep
-        )
+        with patch.object(asyncio, "sleep"):
+            await fade.set_gradient(
+                mock_rgb, colors, steps, pause_after_fade, interval, None
+            )
 
         mock_rgb.set_color.assert_called_once_with(color)
