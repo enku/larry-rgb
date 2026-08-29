@@ -8,10 +8,12 @@ import random
 
 from larry.color import ColorList
 
-from larry_rgb import effects
+from larry_rgb import effects, logger
 from larry_rgb.config import Config
 
 EXCLUDED_NAMES = {"random", "dummy"}
+
+logger = logger.getChild(__name__)
 
 
 class Effect(effects.Effect):
@@ -29,6 +31,7 @@ class Effect(effects.Effect):
     async def start(self, colors: ColorList, config: Config) -> None:
         """Start the Effect"""
         effect_name = get_random_effect_name()
+        logger.debug("Working on behalf of %s", effect_name)
         self.actual_effect = effects.get_effect(effect_name)
 
         actual_config = Config.for_effect(effect_name, config)
