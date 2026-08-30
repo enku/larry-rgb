@@ -111,3 +111,14 @@ class GradientEffectTests(IsolatedAsyncioTestCase):
             effect.color_device(device, [RED, GREEN, BLUE], fixtures.config)
 
         gradient_random.assert_called_once_with([RED, GREEN, BLUE], 15)
+
+    def test_is_alive_false(self, *, fixtures: Fixtures) -> None:
+        effect = gradient.Effect()
+
+        self.assertEqual(effect.is_alive(), False)
+
+    def test_is_alive_true(self, *, fixtures: Fixtures) -> None:
+        effect = gradient.Effect()
+        effect.running = True
+
+        self.assertEqual(effect.is_alive(), True)
