@@ -10,17 +10,6 @@ from larry.config import ConfigType
 from larry_rgb import hardware
 
 
-class EffectInfo:  # pylint: disable=too-few-public-methods
-    """Information about an Effect
-
-    Includes the effect's name and configuration.
-    """
-
-    def __init__(self, name: str, config: dict[str, str]) -> None:
-        self.name = name
-        self.config = config
-
-
 class Config:
     """plugin configuration getter with defaults"""
 
