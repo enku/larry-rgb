@@ -2,7 +2,6 @@
 from configparser import ConfigParser
 from unittest import IsolatedAsyncioTestCase, TestCase, mock
 
-from larry.config import ConfigType
 from unittest_fixtures import Fixtures, given
 
 from larry_rgb import hardware, plugin
@@ -10,17 +9,11 @@ from larry_rgb.config import Config
 from larry_rgb.effects import get_effect
 
 from .lib import clear_cache
+from .lib import make_config as larry_make_config
 
 
 def make_config(**kwargs: str) -> Config:
-    parser = ConfigParser()
-    parser.add_section("rgb")
-    config = ConfigType(parser, "rgb")
-
-    for name, value in kwargs.items():
-        config[name] = value
-
-    return Config(config)
+    return Config(larry_make_config(**kwargs))
 
 
 class ConfigTestCase(TestCase):
