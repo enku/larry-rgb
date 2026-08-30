@@ -2,14 +2,13 @@
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import Mock, patch
 
-from openrgb.utils import RGBColor  # type: ignore
 from unittest_fixtures import Fixtures, given, where
 
 from larry_rgb.effects import gradient
 
 from .lib import BLUE, GREEN, IMAGE_COLORS, RED
 from .lib import config as config_f
-from .lib import rgb_client
+from .lib import rgb_client, rgbcolors
 
 
 @given(rgb_client, config_f)
@@ -56,11 +55,46 @@ class GradientEffectTests(IsolatedAsyncioTestCase):
 
         effect.color_device(device, [RED, GREEN, BLUE], fixtures.config)
 
-        expected = [(255, 0, 0), (127, 127, 0), (0, 255, 0), (0, 127, 127), (0, 0, 255)]
-        expected = expected * 3
+        expected = rgbcolors("#ff0000 #7f7f00 #00ff00 #007f7f #0000ff") * 3
+
         i = 0
         for zone in range(3):
             for led in range(5):
-                color = RGBColor(*expected[i])
+                color = expected[i]
                 device.zones[zone].leds[led].set_color.assert_called_once_with(color)
                 i += 1
+
+    async def test_not_mirrored(self, *, fixtures: Fixtures) -> None:
+        effect = gradient.Effect()
+        device = Mock(zones=[Mock(leds=[Mock() for _ in range(15)])])
+
+        await effect.reset(IMAGE_COLORS, fixtures.config)
+
+        effect.color_device(device, [RED, GREEN, BLUE], fixtures.config)
+
+        expected = rgbcolors(
+            " #ff0000 #da2400 #b64800 #916d00 #6d9100"
+            " #48b600 #24da00 #00ff00 #00da24 #00b648"
+            " #00916d #006d91 #0048b6 #0024da #0000ff"
+        )
+
+        for led, color in zip(device.zones[0].leds, expected):
+            led.set_color.assert_called_once_with(color)
+
+    async def test_mirrored(self, *, fixtures: Fixtures) -> None:
+        fixtures.config.config["effect.gradient.arrangement"] = "mirrored"
+        effect = gradient.Effect()
+        device = Mock(zones=[Mock(leds=[Mock() for _ in range(15)])])
+
+        await effect.reset(IMAGE_COLORS, fixtures.config)
+
+        effect.color_device(device, [RED, GREEN, BLUE], fixtures.config)
+
+        expected = rgbcolors(
+            " #ff0000 #bb4400 #778800 #32cc00 #00ee10"
+            " #00aa54 #006599 #0021dd #0021dd #006599"
+            " #00a955 #00ed11 #33cb00 #778700 #bb4300"
+        )
+
+        for led, color in zip(device.zones[0].leds, expected):
+            led.set_color.assert_called_once_with(color)

@@ -118,4 +118,6 @@ def config_t(fixtures: Fixtures) -> ConfigType:
 
 def rgbcolors(s: str) -> list[RGBColor]:
     """Return the RGBColor list given the list of color strings"""
-    return [RGBColor(c.red, c.green, c.blue) for i in s.split() for c in [Color(i)]]
+    return [
+        RGBColor(c.red, c.green, c.blue) for i in s.strip().split() for c in [Color(i)]
+    ]
