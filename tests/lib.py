@@ -13,6 +13,7 @@ from larry import Color
 from larry.config import ConfigType
 from larry.image import RasterImage
 from openrgb.orgb import Device  # type: ignore[import-untyped]
+from openrgb.utils import RGBColor  # type: ignore
 from unittest_fixtures import FixtureContext, Fixtures, fixture
 
 from larry_rgb import effects
@@ -113,3 +114,8 @@ def config_t(fixtures: Fixtures) -> ConfigType:
     config: ConfigType = fixtures.config.config
 
     return config
+
+
+def rgbcolors(s: str) -> list[RGBColor]:
+    """Return the RGBColor list given the list of color strings"""
+    return [RGBColor(c.red, c.green, c.blue) for i in s.split() for c in [Color(i)]]

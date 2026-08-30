@@ -10,14 +10,13 @@ from unittest import IsolatedAsyncioTestCase, TestCase
 from unittest.mock import Mock, call, patch
 
 from larry.color import Color
-from openrgb.utils import RGBColor  # type: ignore
 from unittest_fixtures import Fixtures, given, where
 
 from larry_rgb.effects import stream
 
 from .lib import BLUE, GREEN, IMAGE_COLORS, RED
 from .lib import config as config_f
-from .lib import rgb_client
+from .lib import rgb_client, rgbcolors
 
 
 @given(config_f)
@@ -195,7 +194,7 @@ class EffectColorDeviceTests(IsolatedAsyncioTestCase):
     async def test(self, *, fixtures: Fixtures) -> None:
         effect = stream.Effect()
         effect.config = fixtures.config
-        device = Mock(colors=[RGBColor(0, 0, 0) for _ in range(9)])
+        device = Mock(colors=rgbcolors("#000") * 9)
 
         for reverse in (False, True):
             with self.subTest(reverse=reverse):
@@ -229,7 +228,3 @@ class ParseEffectTests(TestCase):
         effect_config = stream.parse_effect_config({"interval": "3.1"})
 
         self.assertEqual(effect_config.interval, 3.1)
-
-
-def rgbcolors(s: str) -> list[RGBColor]:
-    return [RGBColor(c.red, c.green, c.blue) for i in s.split() for c in [Color(i)]]
