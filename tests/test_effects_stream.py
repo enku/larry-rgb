@@ -11,96 +11,84 @@ from unittest.mock import Mock, call, patch
 
 from larry.color import Color
 from openrgb.utils import RGBColor  # type: ignore
-from unittest_fixtures import Fixtures, given
+from unittest_fixtures import Fixtures, given, where
 
-from larry_rgb.config import Config
 from larry_rgb.effects import stream
 
-from .lib import BLUE, GREEN, IMAGE_COLORS, RED, make_config, rgb_client
+from .lib import BLUE, GREEN, IMAGE_COLORS, RED
+from .lib import config as config_f
+from .lib import rgb_client
 
 
+@given(config_f)
 class EffectStartTests(IsolatedAsyncioTestCase):
-    async def test_when_cold(self) -> None:
+    async def test_when_cold(self, *, fixtures: Fixtures) -> None:
         effect = stream.Effect()
-        config = Config(make_config())
 
         with patch.object(effect, "reset") as reset:
-            await effect.start([RED, GREEN, BLUE], config)
+            await effect.start([RED, GREEN, BLUE], fixtures.config)
 
-        reset.assert_called_once_with([RED, GREEN, BLUE], config)
+        reset.assert_called_once_with([RED, GREEN, BLUE], fixtures.config)
 
-    async def test_when_warm(self) -> None:
+    async def test_when_warm(self, fixtures: Fixtures) -> None:
         effect = stream.Effect()
         effect._running = True
-        config = Config(make_config())
 
         with patch.object(effect, "reset") as reset:
-            await effect.start([RED, GREEN, BLUE], config)
+            await effect.start([RED, GREEN, BLUE], fixtures.config)
 
         reset.assert_not_called()
 
 
+@given(config_f)
+@where(
+    config={
+        "effect": "stream",
+        "effect.stream.interval": "9.0",
+        "effect.stream.dominant_color_count": "9",
+    }
+)
 class EffectResetTests(IsolatedAsyncioTestCase):
-    async def test_stops_current_task(self) -> None:
+    async def test_stops_current_task(self, *, fixtures: Fixtures) -> None:
         effect = stream.Effect()
         current_task = effect._task
-        config = Config(make_config())
 
         self.assertEqual(current_task.done(), False)
 
         with patch.object(asyncio, "create_task", wraps=asyncio.create_task):
             with patch.object(effect, "hw_update", return_value="called"):
-                await effect.reset(IMAGE_COLORS, config)
+                await effect.reset(IMAGE_COLORS, fixtures.config)
 
         self.assertNotEqual(effect._task, current_task)
         self.assertEqual(current_task.done(), True)
 
-    async def test_sets_config_attr(self) -> None:
+    async def test_sets_config_attr(self, *, fixtures: Fixtures) -> None:
         effect = stream.Effect()
-        config = Config(
-            make_config(
-                **{
-                    "effect": "stream",
-                    "effect.stream.interval": "9.0",
-                    "effect.stream.dominant_color_count": "9",
-                }
-            )
-        )
 
         with patch.object(asyncio, "create_task", wraps=asyncio.create_task):
             with patch.object(effect, "hw_update", return_value="called"):
-                await effect.reset(IMAGE_COLORS, config)
+                await effect.reset(IMAGE_COLORS, fixtures.config)
 
-        self.assertEqual(effect.config, config)
+        self.assertEqual(effect.config, fixtures.config)
 
-    async def test_sets_running_attr(self) -> None:
+    async def test_sets_running_attr(self, *, fixtures: Fixtures) -> None:
         effect = stream.Effect()
-        config = Config(make_config())
 
         with patch.object(asyncio, "create_task", wraps=asyncio.create_task):
             with patch.object(effect, "hw_update", return_value="called"):
-                await effect.reset(IMAGE_COLORS, config)
+                await effect.reset(IMAGE_COLORS, fixtures.config)
 
         self.assertEqual(effect._running, True)
 
-    async def test_creates_new_task(self) -> None:
+    async def test_creates_new_task(self, *, fixtures: Fixtures) -> None:
         effect = stream.Effect()
 
         for reverse in (False, True):
             with self.subTest(reverse=reverse):
-                config = Config(
-                    make_config(
-                        **{
-                            "effect": "stream",
-                            "effect.stream.interval": "9.0",
-                            "effect.stream.dominant_color_count": "9",
-                            "effect.stream.direction": (
-                                "backward" if reverse else "forward"
-                            ),
-                        }
-                    )
+                config = fixtures.config
+                config.config["effect.stream.direction"] = (
+                    "backward" if reverse else "forward"
                 )
-
                 with patch.object(
                     asyncio, "create_task", wraps=asyncio.create_task
                 ) as create:
@@ -117,21 +105,21 @@ class EffectResetTests(IsolatedAsyncioTestCase):
                 self.assertEqual(result, "called")
 
 
+@given(config_f)
 class EffectIsAliveTests(IsolatedAsyncioTestCase):
-    async def test_true(self) -> None:
+    async def test_true(self, *, fixtures: Fixtures) -> None:
         effect = stream.Effect()
 
         with patch.object(effect, "hw_update"):
-            await effect.start(
-                IMAGE_COLORS, Config(make_config(address="host.invalid"))
-            )
+            await effect.start(IMAGE_COLORS, fixtures.config)
 
         try:
             self.assertEqual(effect.is_alive(), True)
         finally:
             await effect.stop()
 
-    async def test_false(self) -> None:
+    async def test_false(self, *, fixtures: Fixtures) -> None:
+        # pylint: disable=unused-argument
         effect = stream.Effect()
 
         await effect.stop()
@@ -139,10 +127,11 @@ class EffectIsAliveTests(IsolatedAsyncioTestCase):
         self.assertEqual(effect.is_alive(), False)
 
 
+@given(config_f)
 class EffectStopTests(IsolatedAsyncioTestCase):
-    async def test(self) -> None:
+    # pylint: disable=unused-argument
+    async def test(self, *, fixtures: Fixtures) -> None:
         effect = stream.Effect()
-        effect.config = Config(make_config())
         effect._running = True
 
         self.assertEqual(effect._task.done(), False)
@@ -153,12 +142,11 @@ class EffectStopTests(IsolatedAsyncioTestCase):
         self.assertEqual(effect._task.done(), True)
 
 
-@given(rgb_client)
+@given(rgb_client, config_f)
 class EffectHWUpdateTests(IsolatedAsyncioTestCase):
-    # pylint: disable=unused-argument
     async def test(self, *, fixtures: Fixtures) -> None:
         effect = stream.Effect()
-        effect.config = Config(make_config())
+        effect.config = fixtures.config
         effect._running = True
         colors = [RED, GREEN, BLUE]
 
@@ -184,7 +172,7 @@ class EffectHWUpdateTests(IsolatedAsyncioTestCase):
 
     async def test_stops_when_running_is_false(self, fixtures: Fixtures) -> None:
         effect = stream.Effect()
-        effect.config = Config(make_config())
+        effect.config = fixtures.config
         effect._running = True
         colors = [RED, GREEN, BLUE]
 
@@ -202,10 +190,11 @@ class EffectHWUpdateTests(IsolatedAsyncioTestCase):
         self.assertGreaterEqual(client.show.call_count, 2)
 
 
+@given(config_f)
 class EffectColorDeviceTests(IsolatedAsyncioTestCase):
-    async def test(self) -> None:
+    async def test(self, *, fixtures: Fixtures) -> None:
         effect = stream.Effect()
-        effect.config = Config(make_config())
+        effect.config = fixtures.config
         device = Mock(colors=[RGBColor(0, 0, 0) for _ in range(9)])
 
         for reverse in (False, True):

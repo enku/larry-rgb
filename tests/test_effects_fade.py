@@ -7,25 +7,22 @@ from unittest import IsolatedAsyncioTestCase
 from unittest.mock import ANY, AsyncMock, Mock, call, patch
 
 from larry.color import Color
-from unittest_fixtures import Fixtures, given
+from unittest_fixtures import Fixtures, given, where
 
 from larry_rgb import hardware
-from larry_rgb.config import Config
 from larry_rgb.effects import fade
 
-from .lib import BLUE, GREEN, RED, make_config, np_random_seed, rgb_client
+from .lib import BLUE, GREEN, RED
+from .lib import config as config_f
+from .lib import np_random_seed, rgb_client
 
 
-@given(np_random_seed, rgb_client)
+@given(np_random_seed, rgb_client, config_f)
+@where(config={"address": "host.invalid:1234", "effect.fade.max_palette_size": "3"})
 class EffectTestCase(IsolatedAsyncioTestCase):
     """Tests for the Effect class"""
 
     async def test_reset(self, fixtures: Fixtures) -> None:
-        config = Config(
-            make_config(
-                **{"address": "host.invalid:1234", "effect.fade.max_palette_size": "3"}
-            )
-        )
         effect = fade.Effect()
 
         orig_task = effect._task
@@ -33,18 +30,14 @@ class EffectTestCase(IsolatedAsyncioTestCase):
 
         with patch.object(effect, "hw_update") as hw_update:
             with patch.object(effect, "stop", wraps=effect.stop) as stop:
-                await effect.reset([], config)
+                await effect.reset([], fixtures.config)
 
-        hw_update.assert_called_once_with(config, [])
+        hw_update.assert_called_once_with(fixtures.config, [])
         stop.assert_called_once_with()
         self.assertEqual(orig_task.done(), True)
 
     async def test_hw_update(self, fixtures: Fixtures) -> None:
-        config = Config(
-            make_config(
-                **{"address": "host.invalid:1234", "effect.fade.max_palette_size": "3"}
-            )
-        )
+        config = fixtures.config
         effect = fade.Effect()
         effect.running = True
 
@@ -57,11 +50,6 @@ class EffectTestCase(IsolatedAsyncioTestCase):
         set_gradient.assert_called_once_with(config.rgb, ANY, 20, 0.0, 0.05, None)
 
     async def test_hw_update2(self, fixtures: Fixtures) -> None:
-        config = Config(
-            make_config(
-                **{"address": "host.invalid:1234", "effect.fade.max_palette_size": "3"}
-            )
-        )
         effect = fade.Effect()
         effect.running = True
         call_count = 0
@@ -80,28 +68,27 @@ class EffectTestCase(IsolatedAsyncioTestCase):
         with patch.object(fade, "set_gradient") as set_gradient:
             set_gradient.side_effect = side_effect
 
-            await effect.hw_update(config, [RED, GREEN, BLUE])
+            await effect.hw_update(fixtures.config, [RED, GREEN, BLUE])
 
         self.assertEqual(call_count, 2)
         self.assertEqual(set_gradient.call_count, 2)
         set_gradient.assert_called_with(
-            config.rgb, ANY, 20, 0.0, 0.05, Color(10, 10, 10)
+            fixtures.config.rgb, ANY, 20, 0.0, 0.05, Color(10, 10, 10)
         )
 
     async def test_start_calls_reset_with_correct_args(
         self, fixtures: Fixtures
     ) -> None:
-        config = Config(make_config(colors="#ff0000 #000000"))
         effect = fade.Effect()
 
         with (
             patch.object(effect, "hw_update"),
             patch.object(effect, "reset") as effect_reset,
         ):
-            await effect.start([], config)
+            await effect.start([], fixtures.config)
             await effect._task  # pylint: disable=protected-access
 
-        effect_reset.assert_called_with([], config)
+        effect_reset.assert_called_with([], fixtures.config)
 
     async def test_stop(self, fixtures: Fixtures) -> None:
         effect = fade.Effect()

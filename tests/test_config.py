@@ -2,36 +2,32 @@
 from configparser import ConfigParser
 from unittest import IsolatedAsyncioTestCase, TestCase, mock
 
-from unittest_fixtures import Fixtures, given
+from unittest_fixtures import Fixtures, given, where
 
 from larry_rgb import hardware, plugin
 from larry_rgb.config import Config
 from larry_rgb.effects import get_effect
 
 from .lib import clear_cache
-from .lib import make_config as larry_make_config
+from .lib import config as config_f
 
 
-def make_config(**kwargs: str) -> Config:
-    return Config(larry_make_config(**kwargs))
-
-
+@given(config_f)
+@where(
+    config={
+        "address": "host.invalid:6789",
+        "effect": "random",
+        "effect.random.filter": "foo",
+        "effect.gradient.filter": "bar",
+        "effect.fade.filter": "baz",
+    }
+)
 class ConfigTestCase(TestCase):
-    def test_equality_of_different_type(self) -> None:
-        config = make_config()
+    def test_equality_of_different_type(self, *, fixtures: Fixtures) -> None:
+        self.assertFalse(6 == fixtures.config)
 
-        self.assertFalse(6 == config)
-
-    def test_for_effect(self) -> None:
-        orig_config = make_config(
-            **{
-                "effect": "random",
-                "effect.random.filter": "foo",
-                "effect.gradient.filter": "bar",
-                "effect.fade.filter": "baz",
-            }
-        )
-
+    def test_for_effect(self, *, fixtures: Fixtures) -> None:
+        orig_config = fixtures.config
         self.assertEqual(orig_config.effect, "random")
         self.assertEqual(orig_config.effect_config["filter"], "foo")
 
@@ -40,11 +36,9 @@ class ConfigTestCase(TestCase):
         self.assertEqual(new_config.effect, "gradient")
         self.assertEqual(new_config.effect_config["filter"], "bar")
 
-    def test_rgb_property(self) -> None:
-        config = make_config(address="host.invalid:6789")
-
+    def test_rgb_property(self, *, fixtures: Fixtures) -> None:
         with mock.patch("larry_rgb.config.hardware.OpenRGBClient"):
-            self.assertIsInstance(config.rgb, hardware.RGB)
+            self.assertIsInstance(fixtures.config.rgb, hardware.RGB)
 
 
 @given(clear_cache)

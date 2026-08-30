@@ -16,6 +16,7 @@ from openrgb.orgb import Device  # type: ignore[import-untyped]
 from unittest_fixtures import FixtureContext, Fixtures, fixture
 
 from larry_rgb import effects
+from larry_rgb.config import Config
 
 TEST_DIR = Path(__file__).resolve().parent
 IMAGE = TEST_DIR / "input.jpeg"
@@ -24,16 +25,6 @@ IMAGE_COLORS = list(RasterImage(IMAGE.read_bytes()).colors)
 RED = Color("red")
 GREEN = Color("green")
 BLUE = Color("blue")
-
-
-def make_config(**kwargs: str) -> ConfigType:
-    parser = ConfigParser()
-    parser.add_section("rgb")
-    config = ConfigType(parser, "rgb")
-
-    config.update(kwargs)
-
-    return config
 
 
 @fixture()
@@ -96,3 +87,29 @@ def rgb_client(
     """Mock the OpenRGBClient and return an instance of the mock"""
     with mock.patch(where) as client:
         yield client.return_value
+
+
+@fixture()
+def config(_: Fixtures, config: dict[str, str] | None = None) -> Config:
+    """Return a Larry ConfigType"""
+    if config is None:
+        config = {}
+
+    parser = ConfigParser()
+    parser.add_section("rgb")
+    larry_config = ConfigType(parser, "rgb")
+
+    larry_config.update(config)
+
+    return Config(larry_config)
+
+
+@fixture(config)
+def config_t(fixtures: Fixtures) -> ConfigType:
+    """Return a Config
+
+    Pass parameters in through the config fixture.
+    """
+    config: ConfigType = fixtures.config.config
+
+    return config
