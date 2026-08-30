@@ -53,7 +53,6 @@ class Effect(effects.Effect):
         """Set the given device's color to the given color"""
         effect_config = parse_effect_config(config.effect_config)
         arrangement = effect_config.arrangement
-        print(arrangement)
 
         for zone in device.zones:
             led_count = len(zone.leds)
