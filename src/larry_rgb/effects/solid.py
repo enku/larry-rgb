@@ -1,7 +1,5 @@
 """Solid color Effect"""
 
-import asyncio
-
 from larry import LOGGER
 from larry.color import Color, ColorList
 from larry.plugins import apply_plugin_filter
@@ -17,7 +15,6 @@ class Effect(effects.Effect):
     """Solid color Effect"""
 
     def __init__(self) -> None:
-        self._lock = asyncio.Lock()
         self._running = False
 
     def is_alive(self) -> bool:
@@ -32,8 +29,7 @@ class Effect(effects.Effect):
             logger.debug("Effect is already running")
             return
 
-        async with self._lock:
-            self._running = True
+        self._running = True
 
         await self.reset(colors, config)
 
@@ -51,24 +47,14 @@ class Effect(effects.Effect):
 
         [color] = apply_plugin_filter([color], config.config)
         logger.debug("color: %s", color)
-        color_all_rgbs(color, get_rgb(config))
+        color_all_rgbs(color, config.rgb)
 
     async def stop(self) -> None:
         """Stop the Effect"""
-        async with self._lock:
-            self._running = False
+        self._running = False
 
 
 def color_all_rgbs(color: Color, rgb: hw.RGB) -> None:
     """Set all rgbs to the given color"""
     logger.debug("Setting all LEDs color to %s", color)
     rgb.set_color(color)
-
-
-def get_rgb(config: Config) -> hw.RGB:
-    """Return an RGB instance given the config"""
-    address_and_port = config.address
-    address, _, port_str = address_and_port.partition(":")
-    port = int(port_str) if port_str else 6742
-
-    return hw.RGB(address=address, port=port)

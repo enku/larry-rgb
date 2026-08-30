@@ -11,11 +11,12 @@ from unittest.mock import Mock, call, patch
 
 from larry.color import Color
 from openrgb.utils import RGBColor  # type: ignore
+from unittest_fixtures import Fixtures, given
 
 from larry_rgb.config import Config
 from larry_rgb.effects import stream
 
-from .lib import BLUE, GREEN, IMAGE_COLORS, RED, make_config
+from .lib import BLUE, GREEN, IMAGE_COLORS, RED, make_config, rgb_client
 
 
 class EffectStartTests(IsolatedAsyncioTestCase):
@@ -152,43 +153,24 @@ class EffectStopTests(IsolatedAsyncioTestCase):
         self.assertEqual(effect._task.done(), True)
 
 
-class EffectRGBTests(IsolatedAsyncioTestCase):
-    async def test(self) -> None:
-        effect = stream.Effect()
-        effect.config = Config(make_config(address="host.invalid:8900"))
-
-        with patch.object(stream, "hw") as hw:
-            rgb = effect.rgb
-
-        hw.RGB.assert_called_once_with(address="host.invalid", port=8900)
-        self.assertEqual(rgb, hw.RGB.return_value)
-
-    async def test_not_configured(self) -> None:
-        effect = stream.Effect()
-
-        with self.assertRaises(RuntimeError) as context:
-            _ = effect.rgb
-
-        self.assertEqual(str(context.exception), "Effect has not been started")
-
-
+@given(rgb_client)
 class EffectHWUpdateTests(IsolatedAsyncioTestCase):
-    async def test(self) -> None:
+    # pylint: disable=unused-argument
+    async def test(self, *, fixtures: Fixtures) -> None:
         effect = stream.Effect()
         effect.config = Config(make_config())
         effect._running = True
         colors = [RED, GREEN, BLUE]
 
-        with patch.object(type(effect), "rgb") as rgb:
-            with patch.object(effect, "color_device") as color_device:
-                client = rgb.openrgb_client
-                client.ee_devices = [
-                    Mock(colors=rgbcolors("#000 #000 #000")) for _ in range(3)
-                ]
-                task = asyncio.create_task(effect.hw_update(colors, 0.01, False))
-                await asyncio.sleep(0)
-                effect._running = False
-                await task
+        with patch.object(effect, "color_device") as color_device:
+            client = effect.config.rgb.openrgb_client
+            client.ee_devices = [
+                Mock(colors=rgbcolors("#000 #000 #000")) for _ in range(3)
+            ]
+            task = asyncio.create_task(effect.hw_update(colors, 0.01, False))
+            await asyncio.sleep(0)
+            effect._running = False
+            await task
 
         self.assertEqual(color_device.call_count, 3)
         devices = client.ee_devices
@@ -200,23 +182,22 @@ class EffectHWUpdateTests(IsolatedAsyncioTestCase):
         self.assertEqual(color_device.mock_calls, expected_calls)
         client.show.assert_called_once_with()
 
-    async def test_stops_when_running_is_false(self) -> None:
+    async def test_stops_when_running_is_false(self, fixtures: Fixtures) -> None:
         effect = stream.Effect()
         effect.config = Config(make_config())
         effect._running = True
         colors = [RED, GREEN, BLUE]
 
-        with patch.object(type(effect), "rgb") as rgb:
-            with patch.object(effect, "color_device"):
-                client = rgb.openrgb_client
-                client.ee_devices = [
-                    Mock(colors=rgbcolors("#000 #000 #000")) for _ in range(3)
-                ]
-                task = asyncio.create_task(effect.hw_update(colors, 0.01, False))
-                await asyncio.sleep(0)
-                await asyncio.sleep(0.01)
-                effect._running = False
-                await task
+        with patch.object(effect, "color_device"):
+            client = effect.config.rgb.openrgb_client
+            client.ee_devices = [
+                Mock(colors=rgbcolors("#000 #000 #000")) for _ in range(3)
+            ]
+            task = asyncio.create_task(effect.hw_update(colors, 0.01, False))
+            await asyncio.sleep(0)
+            await asyncio.sleep(0.01)
+            effect._running = False
+            await task
 
         self.assertGreaterEqual(client.show.call_count, 2)
 

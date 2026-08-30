@@ -16,10 +16,13 @@ DOMINANT_COLOR = Color("#9c7e35")
 make_config = lib.make_config
 
 
+@given(lib.rgb_client)
 @patch("larry_rgb.effects.solid.color_all_rgbs")
-@patch("larry_rgb.effects.solid.get_rgb")
 class SolidEffectTests(IsolatedAsyncioTestCase):
-    async def test_with_dominant(self, get_rgb: Mock, color_all_rgbs: Mock) -> None:
+    # pylint: disable=unused-argument
+    async def test_with_dominant(
+        self, color_all_rgbs: Mock, *, fixtures: Fixtures
+    ) -> None:
         # given the config to run the solid effect
         config = make_config(effect="solid")
 
@@ -28,13 +31,12 @@ class SolidEffectTests(IsolatedAsyncioTestCase):
         await task
 
         # it colors the leds the expected color
-        get_rgb.assert_called_with(Config(config))
-        rgb = get_rgb.return_value
+        rgb = Config(config).rgb
 
         color_all_rgbs.assert_called_once_with(DOMINANT_COLOR, rgb)
 
     async def test_with_color_from_config(
-        self, get_rgb: Mock, color_all_rgbs: Mock
+        self, color_all_rgbs: Mock, *, fixtures: Fixtures
     ) -> None:
         # given the config to run the solid effect, with configured color
         config = make_config(**{"effect": "solid", "effect.solid.color": "white"})
@@ -44,8 +46,7 @@ class SolidEffectTests(IsolatedAsyncioTestCase):
         await task
 
         # it colors the leds the expected color
-        get_rgb.assert_called_with(Config(config))
-        rgb = get_rgb.return_value
+        rgb = Config(config).rgb
 
         color_all_rgbs.assert_called_once_with(Color("white"), rgb)
 

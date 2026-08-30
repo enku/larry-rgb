@@ -8,7 +8,13 @@ from unittest_fixtures import Fixtures, given
 from larry_rgb.config import Config
 from larry_rgb.effects import get_effect, random
 
-from .lib import IMAGE_COLORS, clear_cache, effects_entry_points, make_config
+from .lib import (
+    IMAGE_COLORS,
+    clear_cache,
+    effects_entry_points,
+    make_config,
+    rgb_client,
+)
 
 
 @given(clear_cache)
@@ -50,15 +56,14 @@ class StartTests(IsolatedAsyncioTestCase):
         mock_get_effect.assert_called_once_with("fade")
 
 
-@given(clear_cache)
+@given(clear_cache, rgb_client)
 class StopTests(IsolatedAsyncioTestCase):
     async def test(self, fixtures: Fixtures) -> None:
         effect = random.Effect()
 
         with patch("larry_rgb.effects.random.random", sys_random.Random(34)):
-            with patch("larry_rgb.effects.gradient.hw.RGB", autospec=True):
-                await effect.start(IMAGE_COLORS, Config(make_config()))
-                self.assertEqual(effect.is_alive(), True)
+            await effect.start(IMAGE_COLORS, Config(make_config()))
+            self.assertEqual(effect.is_alive(), True)
 
         await effect.stop()
         self.assertEqual(effect.is_alive(), False)

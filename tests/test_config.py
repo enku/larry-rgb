@@ -1,11 +1,11 @@
 # pylint: disable=missing-docstring
 from configparser import ConfigParser
-from unittest import IsolatedAsyncioTestCase, TestCase
+from unittest import IsolatedAsyncioTestCase, TestCase, mock
 
 from larry.config import ConfigType
 from unittest_fixtures import Fixtures, given
 
-from larry_rgb import plugin
+from larry_rgb import hardware, plugin
 from larry_rgb.config import Config
 from larry_rgb.effects import get_effect
 
@@ -46,6 +46,12 @@ class ConfigTestCase(TestCase):
 
         self.assertEqual(new_config.effect, "gradient")
         self.assertEqual(new_config.effect_config["filter"], "bar")
+
+    def test_rgb_property(self) -> None:
+        config = make_config(address="host.invalid:6789")
+
+        with mock.patch("larry_rgb.config.hardware.OpenRGBClient"):
+            self.assertIsInstance(config.rgb, hardware.RGB)
 
 
 @given(clear_cache)

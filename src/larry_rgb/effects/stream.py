@@ -4,7 +4,6 @@ import asyncio
 import random
 from dataclasses import dataclass
 from enum import StrEnum, unique
-from functools import cached_property
 from itertools import cycle
 
 from larry import LOGGER
@@ -14,7 +13,6 @@ from openrgb.orgb import Device  # type: ignore
 from openrgb.utils import RGBColor  # type: ignore
 
 from larry_rgb import effects
-from larry_rgb import hardware as hw
 from larry_rgb.config import Config
 
 logger = LOGGER.getChild(__name__)
@@ -75,21 +73,6 @@ class Effect(effects.Effect):
         self._running = False
         await self._task
 
-    @cached_property
-    def rgb(self) -> hw.RGB:
-        """Returns the RGB instance.
-
-        A (cached) property so we only instantiate it once, lazily
-        """  # pylint: disable=duplicate-code
-        if not hasattr(self, "config"):
-            raise RuntimeError("Effect has not been started")
-
-        address_and_port = self.config.address
-        address, _, port_str = address_and_port.partition(":")
-        port = int(port_str) if port_str else 6742
-
-        return hw.RGB(address=address, port=port)
-
     async def hw_update(
         self, dominant_colors: ColorList, interval: float, reverse: bool
     ) -> None:
@@ -97,7 +80,7 @@ class Effect(effects.Effect):
         logger.debug(
             "hw_update() started with interval=%s, reverse=%s", interval, reverse
         )
-        client = self.rgb.openrgb_client
+        client = self.config.rgb.openrgb_client
         offsets = {dev: cycle(range(len(dev.colors) - 1)) for dev in client.ee_devices}
 
         while self._running:

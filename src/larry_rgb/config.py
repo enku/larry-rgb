@@ -2,9 +2,12 @@
 
 import re
 from copy import copy
+from functools import cached_property
 from typing import Any, Self
 
 from larry.config import ConfigType
+
+from larry_rgb import hardware
 
 
 class EffectInfo:  # pylint: disable=too-few-public-methods
@@ -36,6 +39,18 @@ class Config:
     def address(self) -> str:
         """Address of the OpenRGB server"""
         return self.config.get("address", fallback="localhost")
+
+    @cached_property
+    def rgb(self) -> hardware.RGB:
+        """Returns the RGB instance.
+
+        A (cached) property so we only instantiate it once, lazily
+        """
+        address_and_port = self.address
+        address, _, port_str = address_and_port.partition(":")
+        port = int(port_str) if port_str else 6742
+
+        return hardware.RGB(address=address, port=port)
 
     def __eq__(self, other: Any) -> bool:
         other_config = getattr(other, "config", None)

@@ -27,14 +27,6 @@ class Effect:
         """Return True if effect is running"""
         return self.running
 
-    def rgb(self, address: str) -> hw.RGB:
-        """Returns the RGB instance"""
-        address_and_port = address
-        address, _, port_str = address_and_port.partition(":")
-        port = int(port_str) if port_str else 6742
-
-        return hw.RGB(address=address, port=port)
-
     async def start(self, colors: ColorList, config: Config) -> None:
         """Start the effect"""
         await self.reset(colors, config)
@@ -63,7 +55,7 @@ class Effect:
 
         while self.running:
             stop_color = await set_gradient(
-                self.rgb(config.address),
+                config.rgb,
                 color_cycle,
                 effect_config.steps,
                 effect_config.pause_after_fade,

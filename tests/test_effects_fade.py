@@ -13,10 +13,10 @@ from larry_rgb import hardware
 from larry_rgb.config import Config
 from larry_rgb.effects import fade
 
-from .lib import BLUE, GREEN, RED, make_config, np_random_seed
+from .lib import BLUE, GREEN, RED, make_config, np_random_seed, rgb_client
 
 
-@given(np_random_seed)
+@given(np_random_seed, rgb_client)
 class EffectTestCase(IsolatedAsyncioTestCase):
     """Tests for the Effect class"""
 
@@ -52,11 +52,9 @@ class EffectTestCase(IsolatedAsyncioTestCase):
             # stop the loop at first iteration
             set_gradient.side_effect = lambda *_: setattr(effect, "running", False)
 
-            with patch.object(effect, "rgb") as rgb:
-                await effect.hw_update(config, [RED, GREEN, BLUE])
+            await effect.hw_update(config, [RED, GREEN, BLUE])
 
-        set_gradient.assert_called_once_with(rgb.return_value, ANY, 20, 0.0, 0.05, None)
-        rgb.assert_called_once_with("host.invalid:1234")
+        set_gradient.assert_called_once_with(config.rgb, ANY, 20, 0.0, 0.05, None)
 
     async def test_hw_update2(self, fixtures: Fixtures) -> None:
         config = Config(
@@ -82,23 +80,13 @@ class EffectTestCase(IsolatedAsyncioTestCase):
         with patch.object(fade, "set_gradient") as set_gradient:
             set_gradient.side_effect = side_effect
 
-            with patch.object(effect, "rgb") as rgb:
-                await effect.hw_update(config, [RED, GREEN, BLUE])
+            await effect.hw_update(config, [RED, GREEN, BLUE])
 
         self.assertEqual(call_count, 2)
         self.assertEqual(set_gradient.call_count, 2)
         set_gradient.assert_called_with(
-            rgb.return_value, ANY, 20, 0.0, 0.05, Color(10, 10, 10)
+            config.rgb, ANY, 20, 0.0, 0.05, Color(10, 10, 10)
         )
-
-    async def test_rgb(self, fixtures: Fixtures) -> None:
-        effect = fade.Effect()
-        config = Config(make_config(address="host.invalid:4444"))
-
-        with patch("larry_rgb.effects.fade.hw.RGB", autospec=True) as mock_rgb:
-            rgb = effect.rgb(config.address)
-
-        self.assertIs(rgb, mock_rgb.return_value)
 
     async def test_start_calls_reset_with_correct_args(
         self, fixtures: Fixtures

@@ -87,3 +87,9 @@ def effects_entry_points(
         mocked.return_value.select.return_value = values
 
         yield names
+
+
+@fixture()
+def rgb_client(_: Fixtures, where: str = "larry_rgb.config.hardware.OpenRGBClient"):
+    with mock.patch(where) as client:
+        yield client.return_value
