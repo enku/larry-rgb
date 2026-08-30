@@ -6,6 +6,7 @@ the gradients across the devices.
 
 # pylint: disable=missing-docstring,protected-access
 import asyncio
+import random
 from unittest import IsolatedAsyncioTestCase, TestCase
 from unittest.mock import Mock, call, patch
 
@@ -81,20 +82,26 @@ class EffectResetTests(IsolatedAsyncioTestCase):
 
     async def test_creates_new_task(self, *, fixtures: Fixtures) -> None:
         effect = stream.Effect()
+        Direction = stream.Direction
 
-        for reverse in (False, True):
-            with self.subTest(reverse=reverse):
+        for direction in Direction:
+            with self.subTest(direction=direction.name):
                 config = fixtures.config
-                config.config["effect.stream.direction"] = (
-                    "backward" if reverse else "forward"
-                )
+                config.config["effect.stream.direction"] = str(direction)
                 with patch.object(
                     asyncio, "create_task", wraps=asyncio.create_task
                 ) as create:
                     with patch.object(
                         effect, "hw_update", return_value="called"
                     ) as hw_update:
-                        await effect.reset(IMAGE_COLORS, config)
+                        with patch.object(stream, "random", random.Random(1)):
+                            await effect.reset(IMAGE_COLORS, config)
+
+                reverse = {
+                    Direction.FORWARD: False,
+                    Direction.BACKWARD: True,
+                    Direction.RANDOM: True,
+                }[direction]
 
                 hw_update.assert_called_once_with(
                     Color.dominant(IMAGE_COLORS, 9), 9.0, reverse
