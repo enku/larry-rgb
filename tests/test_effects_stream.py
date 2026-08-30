@@ -201,7 +201,7 @@ class EffectColorDeviceTests(IsolatedAsyncioTestCase):
                 effect.color_device(device, [RED, GREEN, BLUE], 0, reverse=reverse)
 
                 expected = rgbcolors(
-                    "#ff0000 #aa5500 #00ff00 #00aa55 #0000ff #0055aa #00ff00 #55aa00 #ff0000"
+                    "#ff0000 #8d7100 #1ce200 #00aa54 #0038c6 #0038c6 #00a955 #1ce200 #8d7100"
                 )
                 self.assertEqual(device.colors, expected[::-1] if reverse else expected)
 

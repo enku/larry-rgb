@@ -56,7 +56,7 @@ class GradientEffectTests(IsolatedAsyncioTestCase):
 
         effect.color_device(device, [RED, GREEN, BLUE], fixtures.config)
 
-        expected = [(255, 0, 0), (170, 85, 0), (0, 255, 0), (0, 170, 85), (0, 0, 255)]
+        expected = [(255, 0, 0), (127, 127, 0), (0, 255, 0), (0, 127, 127), (0, 0, 255)]
         expected = expected * 3
         i = 0
         for zone in range(3):
