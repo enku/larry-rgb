@@ -10,6 +10,8 @@ from .lib import BLUE, GREEN, IMAGE_COLORS, RED
 from .lib import config as config_f
 from .lib import rgb_client, rgbcolors
 
+Arrangement = gradient.Arrangement
+
 
 @given(rgb_client, config_f)
 @where(config={"effect": "gradient", "effect.gradient.dominant_color_count": "4"})
@@ -53,7 +55,9 @@ class GradientEffectTests(IsolatedAsyncioTestCase):
 
         await effect.reset(IMAGE_COLORS, fixtures.config)
 
-        effect.color_device(device, [RED, GREEN, BLUE], fixtures.config)
+        effect.color_device(
+            device, [RED, GREEN, BLUE], fixtures.config, Arrangement.NORMAL
+        )
 
         expected = rgbcolors("#ff0000 #7f7f00 #00ff00 #007f7f #0000ff") * 3
 
@@ -70,7 +74,9 @@ class GradientEffectTests(IsolatedAsyncioTestCase):
 
         await effect.reset(IMAGE_COLORS, fixtures.config)
 
-        effect.color_device(device, [RED, GREEN, BLUE], fixtures.config)
+        effect.color_device(
+            device, [RED, GREEN, BLUE], fixtures.config, Arrangement.NORMAL
+        )
 
         expected = rgbcolors(
             " #ff0000 #da2400 #b64800 #916d00 #6d9100"
@@ -82,13 +88,14 @@ class GradientEffectTests(IsolatedAsyncioTestCase):
             led.set_color.assert_called_once_with(color)
 
     async def test_mirrored(self, *, fixtures: Fixtures) -> None:
-        fixtures.config.config["effect.gradient.arrangement"] = "mirrored"
         effect = gradient.Effect()
         device = Mock(zones=[Mock(leds=[Mock() for _ in range(15)])])
 
         await effect.reset(IMAGE_COLORS, fixtures.config)
 
-        effect.color_device(device, [RED, GREEN, BLUE], fixtures.config)
+        effect.color_device(
+            device, [RED, GREEN, BLUE], fixtures.config, Arrangement.MIRRORED
+        )
 
         expected = rgbcolors(
             " #ff0000 #bb4400 #778800 #32cc00 #00ee10"
@@ -98,19 +105,6 @@ class GradientEffectTests(IsolatedAsyncioTestCase):
 
         for led, color in zip(device.zones[0].leds, expected):
             led.set_color.assert_called_once_with(color)
-
-    async def test_random_arrangement(self, *, fixtures: Fixtures) -> None:
-        fixtures.config.config["effect.gradient.arrangement"] = "random"
-        effect = gradient.Effect()
-        device = Mock(zones=[Mock(leds=[Mock() for _ in range(15)])])
-
-        with patch.object(
-            gradient, "gradient_random", wraps=gradient.gradient_random
-        ) as gradient_random:
-            await effect.reset(IMAGE_COLORS, fixtures.config)
-            effect.color_device(device, [RED, GREEN, BLUE], fixtures.config)
-
-        gradient_random.assert_called_once_with([RED, GREEN, BLUE], 15)
 
     def test_is_alive_false(self, *, fixtures: Fixtures) -> None:
         effect = gradient.Effect()

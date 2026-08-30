@@ -32,9 +32,14 @@ class Effect(effects.Effect):
         """Reset the effect"""
         effect_config = parse_effect_config(config.effect_config)
         dominant_colors = Color.dominant(colors, effect_config.dominant_color_count)
+        arrangement = (
+            random.choice([Arrangement.NORMAL, Arrangement.MIRRORED])
+            if effect_config.arrangement is Arrangement.RANDOM
+            else effect_config.arrangement
+        )
 
         for device in config.rgb.openrgb_client.ee_devices:
-            self.color_device(device, dominant_colors, config)
+            self.color_device(device, dominant_colors, config, arrangement)
 
     def is_alive(self) -> bool:
         """Return True if the effect is running"""
@@ -49,20 +54,21 @@ class Effect(effects.Effect):
         """Stop the Effect"""
         self.running = False
 
-    def color_device(self, device: Device, colors: ColorList, config: Config) -> None:
+    def color_device(
+        self,
+        device: Device,
+        colors: ColorList,
+        config: Config,
+        arrangement: Arrangement,
+    ) -> None:
         """Set the given device's color to the given color"""
-        effect_config = parse_effect_config(config.effect_config)
-        arrangement = effect_config.arrangement
-
         for zone in device.zones:
             led_count = len(zone.leds)
 
             if arrangement == Arrangement.NORMAL:
                 gradient = gradient_normal(colors, led_count)
-            elif arrangement == Arrangement.MIRRORED:
-                gradient = gradient_mirrored(colors, led_count)
             else:
-                gradient = gradient_random(colors, led_count)
+                gradient = gradient_mirrored(colors, led_count)
 
             gradient = apply_plugin_filter(gradient, config.config)
 
@@ -80,11 +86,6 @@ def gradient_mirrored(colors: ColorList, count: int) -> ColorList:
     gen = Color.gradient2(colors[:count] + colors[:count][-2::-1], count + 1)
 
     return list(gen)[:-1]
-
-
-def gradient_random(colors: ColorList, count: int) -> ColorList:
-    """Return either a normal or mirrored gradient at random"""
-    return random.choice([gradient_normal, gradient_mirrored])(colors, count)
 
 
 @dataclass(kw_only=True, frozen=True)
