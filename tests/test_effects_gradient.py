@@ -98,3 +98,16 @@ class GradientEffectTests(IsolatedAsyncioTestCase):
 
         for led, color in zip(device.zones[0].leds, expected):
             led.set_color.assert_called_once_with(color)
+
+    async def test_random_arrangement(self, *, fixtures: Fixtures) -> None:
+        fixtures.config.config["effect.gradient.arrangement"] = "random"
+        effect = gradient.Effect()
+        device = Mock(zones=[Mock(leds=[Mock() for _ in range(15)])])
+
+        with patch.object(
+            gradient, "gradient_random", wraps=gradient.gradient_random
+        ) as gradient_random:
+            await effect.reset(IMAGE_COLORS, fixtures.config)
+            effect.color_device(device, [RED, GREEN, BLUE], fixtures.config)
+
+        gradient_random.assert_called_once_with([RED, GREEN, BLUE], 15)

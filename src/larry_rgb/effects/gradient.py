@@ -1,5 +1,6 @@
 """Gradient Effect"""
 
+import random
 from dataclasses import dataclass
 from enum import StrEnum, unique
 
@@ -18,7 +19,7 @@ class Arrangement(StrEnum):
 
     NORMAL = "normal"
     MIRRORED = "mirrored"
-    # RANDOM = "random"  # not yet supported
+    RANDOM = "random"
 
 
 class Effect(effects.Effect):
@@ -51,24 +52,40 @@ class Effect(effects.Effect):
     def color_device(self, device: Device, colors: ColorList, config: Config) -> None:
         """Set the given device's color to the given color"""
         effect_config = parse_effect_config(config.effect_config)
-        mirrored = effect_config.arrangement == Arrangement.MIRRORED
+        arrangement = effect_config.arrangement
+        print(arrangement)
 
         for zone in device.zones:
             led_count = len(zone.leds)
 
-            if mirrored:
-                gradient = list(
-                    Color.gradient2(
-                        colors[:led_count] + colors[:led_count][-2::-1], led_count + 1
-                    )
-                )[:-1]
+            if arrangement == Arrangement.NORMAL:
+                gradient = gradient_normal(colors, led_count)
+            elif arrangement == Arrangement.MIRRORED:
+                gradient = gradient_mirrored(colors, led_count)
             else:
-                gradient = list(Color.gradient2(colors[:led_count], led_count))
+                gradient = gradient_random(colors, led_count)
 
             gradient = apply_plugin_filter(gradient, config.config)
 
             for led, color in zip(zone.leds, gradient):
                 led.set_color(RGBColor(color.red, color.green, color.blue))
+
+
+def gradient_normal(colors: ColorList, count: int) -> ColorList:
+    """Return a "normal" gradient given the stop colors"""
+    return list(Color.gradient2(colors[:count], count))
+
+
+def gradient_mirrored(colors: ColorList, count: int) -> ColorList:
+    """Return a "mirrored" gradient given the stop colors"""
+    gen = Color.gradient2(colors[:count] + colors[:count][-2::-1], count + 1)
+
+    return list(gen)[:-1]
+
+
+def gradient_random(colors: ColorList, count: int) -> ColorList:
+    """Return either a normal or mirrored gradient at random"""
+    return random.choice([gradient_normal, gradient_mirrored])(colors, count)
 
 
 @dataclass(kw_only=True, frozen=True)
