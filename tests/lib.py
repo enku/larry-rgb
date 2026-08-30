@@ -12,7 +12,7 @@ import numpy as np
 from larry import Color
 from larry.config import ConfigType
 from larry.image import RasterImage
-from openrgb.orgb import Device
+from openrgb.orgb import Device  # type: ignore[import-untyped]
 from unittest_fixtures import FixtureContext, Fixtures, fixture
 
 from larry_rgb import effects
@@ -90,6 +90,9 @@ def effects_entry_points(
 
 
 @fixture()
-def rgb_client(_: Fixtures, where: str = "larry_rgb.config.hardware.OpenRGBClient"):
+def rgb_client(
+    _: Fixtures, where: str = "larry_rgb.config.hardware.OpenRGBClient"
+) -> FixtureContext[mock.Mock]:
+    """Mock the OpenRGBClient and return an instance of the mock"""
     with mock.patch(where) as client:
         yield client.return_value
