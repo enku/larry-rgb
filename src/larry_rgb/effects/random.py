@@ -7,14 +7,15 @@ Effect (excluding "dummy" and itself.
 import random
 from typing import Iterable
 
+from larry import LOGGER
 from larry.color import ColorList
 
-from larry_rgb import effects, logger
+from larry_rgb import effects
 from larry_rgb.config import Config
 
 EXCLUDED_NAMES = {"random", "dummy"}
 
-logger = logger.getChild(__name__)
+logger = LOGGER.getChild(__name__)
 
 
 class Effect(effects.Effect):
