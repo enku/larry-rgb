@@ -108,7 +108,7 @@ class Effect(effects.Effect):
 
         # Create gradient. Shave off the last color because it's the same as the start
         # color
-        gradient = list(Color.gradient2(colors[:color_count], color_count))[:-1]
+        gradient = list(Color.gradient2(colors[:color_count], color_count + 1))[:-1]
         gradient = apply_plugin_filter(gradient, self.config.config)
         i = i % len(gradient)
 
