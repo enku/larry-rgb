@@ -56,7 +56,7 @@ class Effect(effects.Effect):
                 reverse = False
             case Direction.BACKWARD:
                 reverse = True
-            case Direction.RANDOM:
+            case _:
                 reverse = random.choice([True, False])
 
         self._task = asyncio.create_task(
