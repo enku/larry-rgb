@@ -213,25 +213,26 @@ class EffectColorDeviceTests(IsolatedAsyncioTestCase):
                 self.assertEqual(device.colors, expected[::-1] if reverse else expected)
 
 
-class ParseEffectTests(TestCase):
-    def test_empty_dict(self) -> None:
-        effect_config = stream.parse_effect_config({})
+@given(config_f)
+@where(config={"effect": "stream"})
+class EffectConfigTests(TestCase):
+    def test_empty_dict(self, *, fixtures: Fixtures) -> None:
+        effect_config = stream.EffectConfig.from_config(fixtures.config)
 
-        self.assertEqual(
-            effect_config,
-            stream.EffectConfig(
-                direction=stream.Direction.FORWARD,
-                dominant_color_count=10,
-                interval=0.1,
-            ),
-        )
+        self.assertEqual(effect_config.direction, stream.Direction.FORWARD)
+        self.assertEqual(effect_config.dominant_color_count, 10)
+        self.assertEqual(effect_config.interval, 0.1)
 
-    def test_dominant_color_count(self) -> None:
-        effect_config = stream.parse_effect_config({"dominant_color_count": "1000"})
+    def test_dominant_color_count(self, *, fixtures: Fixtures) -> None:
+        config = fixtures.config
+        config.config["effect.stream.dominant_color_count"] = "1000"
+        effect_config = stream.EffectConfig.from_config(config)
 
         self.assertEqual(effect_config.dominant_color_count, 1000)
 
-    def test_interval(self) -> None:
-        effect_config = stream.parse_effect_config({"interval": "3.1"})
+    def test_interval(self, *, fixtures: Fixtures) -> None:
+        config = fixtures.config
+        config.config["effect.stream.interval"] = "3.1"
+        effect_config = stream.EffectConfig.from_config(config)
 
         self.assertEqual(effect_config.interval, 3.1)

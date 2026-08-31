@@ -5,6 +5,7 @@ import random
 from dataclasses import dataclass
 from enum import StrEnum, unique
 from itertools import cycle
+from typing import Self
 
 from larry import LOGGER
 from larry.color import Color, ColorList
@@ -47,7 +48,7 @@ class Effect(effects.Effect):
         self.config = config
         self._running = True
 
-        effect_config = parse_effect_config(config.effect_config)
+        effect_config = EffectConfig.from_config(config)
         dominant_colors = Color.dominant(colors, effect_config.dominant_color_count)
         interval = effect_config.interval
 
@@ -129,11 +130,13 @@ class EffectConfig:
     direction: Direction
     interval: float
 
+    @classmethod
+    def from_config(cls, config: Config) -> Self:
+        """Convert Config.effect_config to EffectConfig"""
+        effect_config = config.effect_config
 
-def parse_effect_config(effect_config: dict[str, str]) -> EffectConfig:
-    """Convert Config.effect_config to EffectConfig"""
-    return EffectConfig(
-        dominant_color_count=int(effect_config.get("dominant_color_count", "10")),
-        direction=Direction(effect_config.get("direction", "forward").lower()),
-        interval=float(effect_config.get("interval", "0.1")),
-    )
+        return cls(
+            dominant_color_count=int(effect_config.get("dominant_color_count", "10")),
+            direction=Direction(effect_config.get("direction", "forward").lower()),
+            interval=float(effect_config.get("interval", "0.1")),
+        )
