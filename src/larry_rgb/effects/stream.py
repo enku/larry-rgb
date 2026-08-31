@@ -120,7 +120,7 @@ class Effect(effects.Effect):
         If reverse=True, colors are set in their reverse order.
         """
         # stop at the start color
-        colors = colors + colors[::-1][1:]
+        colors = colors + [colors[0]]
 
         color_count = len(device.colors)
 
