@@ -8,7 +8,7 @@ the gradients across the devices.
 import asyncio
 import random
 from unittest import IsolatedAsyncioTestCase, TestCase
-from unittest.mock import Mock, call, patch
+from unittest.mock import ANY, Mock, call, patch
 
 from larry.color import Color
 from unittest_fixtures import Fixtures, given, where
@@ -18,6 +18,8 @@ from larry_rgb.effects import stream
 from .lib import BLUE, GREEN, IMAGE_COLORS, RED
 from .lib import config as config_f
 from .lib import rgb_client, rgbcolors
+
+TRANSFORMS = stream.TRANSFORMS
 
 
 @given(config_f)
@@ -104,11 +106,22 @@ class EffectResetTests(IsolatedAsyncioTestCase):
                 }[direction]
 
                 hw_update.assert_called_once_with(
-                    Color.dominant(IMAGE_COLORS, 9), 9.0, reverse
+                    Color.dominant(IMAGE_COLORS, 9), 9.0, reverse, "none"
                 )
                 create.assert_called_once()
                 result = await effect._task  # type: ignore[func-returns-value]
                 self.assertEqual(result, "called")
+
+    async def test_with_tranform_from_config(self, *, fixtures: Fixtures) -> None:
+        config = fixtures.config
+        config.config["effect.stream.transform"] = "random"
+        effect = stream.Effect()
+
+        with patch.object(stream, "random", random.Random(1)):
+            with patch.object(effect, "hw_update") as hw_update:
+                await effect.reset(IMAGE_COLORS, config)
+
+        hw_update.assert_called_once_with(ANY, 9.0, False, "fade")
 
 
 @given(config_f)
@@ -161,7 +174,7 @@ class EffectHWUpdateTests(IsolatedAsyncioTestCase):
             client.ee_devices = [
                 Mock(colors=rgbcolors("#000 #000 #000")) for _ in range(3)
             ]
-            task = asyncio.create_task(effect.hw_update(colors, 0.01, False))
+            task = asyncio.create_task(effect.hw_update(colors, 0.01, False, "none"))
             await asyncio.sleep(0)
             effect._running = False
             await task
@@ -169,9 +182,9 @@ class EffectHWUpdateTests(IsolatedAsyncioTestCase):
         self.assertEqual(color_device.call_count, 3)
         devices = client.ee_devices
         expected_calls = [
-            call(devices[0], colors, 0, reverse=False),
-            call(devices[1], colors, 0, reverse=False),
-            call(devices[2], colors, 0, reverse=False),
+            call(devices[0], colors, 0, reverse=False, transform="none"),
+            call(devices[1], colors, 0, reverse=False, transform="none"),
+            call(devices[2], colors, 0, reverse=False, transform="none"),
         ]
         self.assertEqual(color_device.mock_calls, expected_calls)
         client.show.assert_called_once_with()
@@ -187,7 +200,7 @@ class EffectHWUpdateTests(IsolatedAsyncioTestCase):
             client.ee_devices = [
                 Mock(colors=rgbcolors("#000 #000 #000")) for _ in range(3)
             ]
-            task = asyncio.create_task(effect.hw_update(colors, 0.01, False))
+            task = asyncio.create_task(effect.hw_update(colors, 0.01, False, "none"))
             await asyncio.sleep(0)
             await asyncio.sleep(0.01)
             effect._running = False
@@ -205,7 +218,9 @@ class EffectColorDeviceTests(IsolatedAsyncioTestCase):
 
         for reverse in (False, True):
             with self.subTest(reverse=reverse):
-                effect.color_device(device, [RED, GREEN, BLUE], 0, reverse=reverse)
+                effect.color_device(
+                    device, [RED, GREEN, BLUE], 0, reverse=reverse, transform="none"
+                )
 
                 expected = rgbcolors(
                     "#ff0000 #8d7100 #1ce200 #00aa54 #0038c6 #0038c6 #00a955 #1ce200 #8d7100"
@@ -222,6 +237,7 @@ class EffectConfigTests(TestCase):
         self.assertEqual(effect_config.direction, stream.Direction.FORWARD)
         self.assertEqual(effect_config.dominant_color_count, 10)
         self.assertEqual(effect_config.interval, 0.1)
+        self.assertEqual(effect_config.transform, "none")
 
     def test_dominant_color_count(self, *, fixtures: Fixtures) -> None:
         config = fixtures.config
@@ -236,3 +252,34 @@ class EffectConfigTests(TestCase):
         effect_config = stream.EffectConfig.from_config(config)
 
         self.assertEqual(effect_config.interval, 3.1)
+
+    def test_transform(self, *, fixtures: Fixtures) -> None:
+        config = fixtures.config
+        config.config["effect.stream.transform"] = "random"
+        effect_config = stream.EffectConfig.from_config(config)
+
+        self.assertEqual(effect_config.transform, "random")
+
+
+class TransformTests(TestCase):
+    def test_all(self) -> None:
+        for name, transform in TRANSFORMS.items():
+            with self.subTest(transform=name):
+                color = transform(Color("#ffc0cb"), 5, 16)
+                self.assertIsInstance(color, Color)
+
+    def test_none(self) -> None:
+        color = TRANSFORMS["none"](Color("#ffc0cb"), 5, 16)
+
+        self.assertEqual(color, Color("#ffc0cb"))
+
+    def test_fade(self) -> None:
+        color = TRANSFORMS["fade"](Color("#ffc0cb"), 5, 16)
+
+        self.assertEqual(color, Color("#5f484c"))
+
+    def test_twinkle(self) -> None:
+        with patch.object(stream, "random", random.Random(1)):
+            color = TRANSFORMS["twinkle"](Color("#ffc0cb"), 5, 16)
+
+        self.assertEqual(color, Color("#22191b"))
