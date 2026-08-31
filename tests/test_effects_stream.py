@@ -112,7 +112,7 @@ class EffectResetTests(IsolatedAsyncioTestCase):
                 result = await effect._task  # type: ignore[func-returns-value]
                 self.assertEqual(result, "called")
 
-    async def test_with_tranform_from_config(self, *, fixtures: Fixtures) -> None:
+    async def test_with_transform_from_config(self, *, fixtures: Fixtures) -> None:
         config = fixtures.config
         config.config["effect.stream.transform"] = "random"
         effect = stream.Effect()
