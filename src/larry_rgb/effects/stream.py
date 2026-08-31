@@ -1,6 +1,7 @@
 """Gradient Effect"""
 
 import asyncio
+import math
 import random
 from dataclasses import dataclass
 from enum import StrEnum, unique
@@ -152,9 +153,7 @@ def transform_fade(color: Color, i: int, total: int) -> Color:
     The fade amount is a factor of the iterator value's distance from the total number
     of LEDs.
     """
-    factor = abs(i - total / 2) / (total / 2)
-
-    return color * factor
+    return color * logarithmic_curve(i, total)
 
 
 def transform_none(color: Color, _i: int, _total: int) -> Color:
@@ -165,6 +164,43 @@ def transform_none(color: Color, _i: int, _total: int) -> Color:
 def transform_twinkle(color: Color, _i: int, _total: int) -> Color:
     """Darken the color by a random amount"""
     return color * random.random()
+
+
+def logarithmic_curve(i: int, n: int) -> float:
+    """Return a float for a given integer i (0 <= i < n) based on n.
+
+    Starts at 1 at i=0, drops logarithmically to 0 by i=n/2, and rises
+    logarithmically back up to 1 as i approaches n-1.
+    """
+    if n <= 1:
+        raise ValueError("n must be greater than 1")
+    if not 0 <= i < n:
+        raise ValueError("i must be between 0 and n-1")
+
+    mid = n / 2.0
+
+    if i <= mid:
+        if mid <= 0:
+            return 1.0
+        numerator = math.log(mid - i + 1)
+        denominator = math.log(mid + 1)
+
+        if denominator == 0:
+            return 0.0 if i > 0 else 1.0
+
+        return max(0.0, min(1.0, numerator / denominator))
+
+    span = (n - 1) - mid
+    if span <= 0:
+        return 1.0
+    d = i - mid
+    numerator = math.log(d + 1)
+    denominator = math.log(span + 1)
+
+    if denominator == 0:
+        return 1.0
+
+    return max(0.0, min(1.0, numerator / denominator))
 
 
 TRANSFORMS: dict[str, Transform] = {
