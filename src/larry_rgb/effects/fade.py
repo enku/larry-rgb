@@ -9,14 +9,14 @@ from larry import LOGGER
 from larry.color import Color, ColorList
 from larry.plugins import apply_plugin_filter
 
-from larry_rgb import colorlib
+from larry_rgb import colorlib, effects
 from larry_rgb import hardware as hw
 from larry_rgb.config import Config
 
 logger = LOGGER.getChild(__name__)
 
 
-class Effect:
+class Effect(effects.Effect):
     """Container for the Effect coroutine"""
 
     def __init__(self) -> None:

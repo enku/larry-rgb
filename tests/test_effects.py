@@ -5,7 +5,7 @@ from unittest.mock import patch
 from unittest_fixtures import Fixtures, given, where
 
 from larry_rgb.config import Config
-from larry_rgb.effects import get_effect, list_effects
+from larry_rgb.effects import Effect, get_effect, list_effects
 
 from .lib import IMAGE_COLORS, clear_cache
 from .lib import config as config_f
@@ -58,6 +58,9 @@ class AllEffectsTests(IsolatedAsyncioTestCase):
 
         # we should be able to instantiate with no args
         effect = get_effect(effect_name)
+
+        # it should be an instance of Effect
+        self.assertIsInstance(effect, Effect)
 
         # it should start out not running
         self.assertEqual(effect.is_alive(), False)
