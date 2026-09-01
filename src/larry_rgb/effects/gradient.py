@@ -71,9 +71,10 @@ class Effect(effects.Effect):
                 gradient = gradient_mirrored(colors, led_count)
 
             gradient = apply_plugin_filter(gradient, config.config)
+            rgb_colors = [RGBColor(c.red, c.green, c.blue) for c in gradient]
 
-            for led, color in zip(zone.leds, gradient):
-                led.set_color(RGBColor(color.red, color.green, color.blue))
+            zone.colors = rgb_colors
+            zone.show()
 
 
 def gradient_normal(colors: ColorList, count: int) -> ColorList:

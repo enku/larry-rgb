@@ -59,14 +59,11 @@ class GradientEffectTests(IsolatedAsyncioTestCase):
             device, [RED, GREEN, BLUE], fixtures.config, Arrangement.NORMAL
         )
 
-        expected = rgbcolors("#ff0000 #7f7f00 #00ff00 #007f7f #0000ff") * 3
+        expected = rgbcolors("#ff0000 #7f7f00 #00ff00 #007f7f #0000ff")
 
-        i = 0
-        for zone in range(3):
-            for led in range(5):
-                color = expected[i]
-                device.zones[zone].leds[led].set_color.assert_called_once_with(color)
-                i += 1
+        for zone in device.zones:
+            self.assertEqual(zone.colors, expected)
+            zone.show.assert_called_once_with()
 
     async def test_not_mirrored(self, *, fixtures: Fixtures) -> None:
         effect = gradient.Effect()
@@ -84,8 +81,9 @@ class GradientEffectTests(IsolatedAsyncioTestCase):
             " #00916d #006d91 #0048b6 #0024da #0000ff"
         )
 
-        for led, color in zip(device.zones[0].leds, expected):
-            led.set_color.assert_called_once_with(color)
+        for zone in device.zones:
+            self.assertEqual(zone.colors, expected)
+            zone.show.assert_called_once_with()
 
     async def test_mirrored(self, *, fixtures: Fixtures) -> None:
         effect = gradient.Effect()
@@ -103,8 +101,9 @@ class GradientEffectTests(IsolatedAsyncioTestCase):
             " #00a955 #00ed11 #33cb00 #778700 #bb4300"
         )
 
-        for led, color in zip(device.zones[0].leds, expected):
-            led.set_color.assert_called_once_with(color)
+        for zone in device.zones:
+            self.assertEqual(zone.colors, expected)
+            zone.show.assert_called_once_with()
 
     def test_is_alive_false(self, *, fixtures: Fixtures) -> None:
         effect = gradient.Effect()
